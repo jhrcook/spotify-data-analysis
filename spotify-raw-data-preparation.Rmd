@@ -1,0 +1,37 @@
+---
+title: "Spotify Data Preparation"
+author: "Joshua Cook"
+output: github_document
+date: "12/6/2020"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dpi = 500, comment = "#>")
+
+library(mustashe)
+library(jhcutils)
+library(nakedpipe)
+library(tidyverse)
+
+theme_set(theme_minimal())
+
+raw_data_dir <- here::here("raw-data", "MyData")
+data_dir <- here::here("data")
+```
+
+## Streaming History
+
+```{r}
+streaming_history_path <- file.path(raw_data_dir, "StreamingHistory1.json")
+rjson::fromJSON(file = streaming_history_path) %.% {
+  head()
+  map(as_tibble)
+  bind_rows()
+  janitor::clean_names()
+  mutate(
+    end_time = lubridate::ymd_hm(end_time),
+    duration_played = lubridate::as.period(ms_played / 1e3, unit = "seconds")
+  )
+  select(-ms_played)
+}
+```
