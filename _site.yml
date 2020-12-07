@@ -1,0 +1,17 @@
+name: "spotify-data-analysis"
+title: "Personal Spotify Data Analysis"
+description: |
+  Analysis of my personal Spotify data.
+output_dir: "docs"
+navbar:
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
+  right:
+    - icon: fab fa-github
+      href: https://github.com/jhrcook/distill-example
+    - icon: fab fa-twitter
+      href: https://twitter.com/JoshDoesA
+output: distill::distill_article

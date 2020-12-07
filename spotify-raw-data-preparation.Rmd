@@ -1,8 +1,16 @@
 ---
-title: "Spotify Data Preparation"
-author: "Joshua Cook"
-output: github_document
-date: "12/6/2020"
+title: "Data Preparation"
+description: |
+  Preparation of the raw data downloaded from Spotify.
+author:
+  - first_name: "Joshua"
+    last_name: "Cook"
+    url: https://joshuacook.netlify.app
+    orcid_id: 0000-0001-9815-6879
+date: "December 7, 2020"
+output:
+  distill::distill_article:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
