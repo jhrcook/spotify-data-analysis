@@ -1,16 +1,35 @@
 ---
 title: "Personal Spotify Data Analysis"
 description: |
-  Welcome to the website. I hope you enjoy it!
-site: distill::distill_website
+  A website to show the results of analyzing the data Spotify has collected of me.
+author:
+  - first_name: "Joshua"
+    last_name: "Cook"
+    url: https://joshuacook.netlify.app
+    orcid_id: 0000-0001-9815-6879
+date: "`r Sys.Date()`"
+output: distill::distill_article
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-
-# Learn more about creating websites with Distill at:
-# https://rstudio.github.io/distill/website.html
-
-# Learn more about publishing to GitHub Pages at:
-# https://rstudio.github.io/distill/publish_website.html#github-pages
 ```
+
+## Introduction
+
+Spotify allows users to request the information that Spotify has collected of them.
+Out of curiosity, I have downloaded my data and have begun analyzing it.
+This is still a work in progress, but everything I have done is available on this website.
+
+## Some details
+
+### Accessing your data
+
+Spotify allows users to request the information that Spotify has collected of them.
+It is available by accessing Spotify's web application on a Browser and navigating to "Profile"/"Acount"/"Privacy settings" and scrolling to the bottom.
+
+![How to download your personal data from the Spotify website.](misc-assets/spotify-data-download-request.png)
+
+### Building a website with R Markdown and Distill
+
+All of the data processing and analysis presented here was conducted in R using the [R Markdown](https://bookdown.org/yihui/rmarkdown/) format/system/way-of-life and then turned into a website using the  ['Distill'](https://rstudio.github.io/distill/) package.

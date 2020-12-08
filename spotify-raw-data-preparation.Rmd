@@ -24,7 +24,7 @@ library(tidyverse)
 
 theme_set(theme_minimal())
 
-raw_data_dir <- here::here("raw-data", "MyData")
+raw_data_dir <- here::here("_raw-data", "MyData")
 data_dir <- here::here("data")
 ```
 

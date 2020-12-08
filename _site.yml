@@ -1,21 +1,26 @@
 name: "spotify-data-analysis"
 title: "Personal Spotify Data Analysis"
+base_url: https://jhrcook.github.io/spotify-data-analysis/
+repository_url: https://github.com/jhrcook/spotify-data-analysis
 description: |
   Analysis of my personal Spotify data.
 output_dir: "docs"
+include: ["munge"]
 navbar:
-  left:
+  search: true
+  right:
     - text: "Home"
       href: index.html
     - text: "Data Preparation"
       menu:
         - text: "Preparing the downloaded files"
-          href: munge/spotify-raw-data-preparation.html
+          href: spotify-raw-data-preparation.html
     - text: "About"
       href: about.html
-  right:
     - icon: fab fa-github
       href: https://github.com/jhrcook/distill-example
     - icon: fab fa-twitter
       href: https://twitter.com/JoshDoesA
+    - icon: fas fa-laptop
+      href: https://joshuacook.netlify.app
 output: distill::distill_article
