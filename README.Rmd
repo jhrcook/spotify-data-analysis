@@ -6,11 +6,6 @@
 
 The analysis of my personal Spotify data (downloaded on 2020-12-06).
 
-### Notebooks
-
-1. [Data preparation](analysis/spotify-raw-data-preparation.md) ([R Markdown](analysis/spotify-raw-data-preparation.Rmd))
-
-
 ---
 
 [![jhc github](https://img.shields.io/badge/GitHub-jhrcook-181717.svg?style=flat&logo=github)](https://github.com/jhrcook)

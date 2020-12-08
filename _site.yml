@@ -7,6 +7,10 @@ navbar:
   left:
     - text: "Home"
       href: index.html
+    - text: "Data Preparation"
+      menu:
+        - text: "Preparing the downloaded files"
+          href: munge/spotify-raw-data-preparation.html
     - text: "About"
       href: about.html
   right:

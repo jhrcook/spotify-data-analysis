@@ -1,0 +1,71 @@
+---
+title: "Data Preparation"
+description: |
+  Preparation of the raw data downloaded from Spotify.
+author:
+  - first_name: "Joshua"
+    last_name: "Cook"
+    url: https://joshuacook.netlify.app
+    orcid_id: 0000-0001-9815-6879
+date: "December 7, 2020"
+output:
+  distill::distill_article:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, dpi = 500, comment = "#>")
+
+library(mustashe)
+library(jhcutils)
+library(nakedpipe)
+library(kableExtra)
+library(tidyverse)
+
+theme_set(theme_minimal())
+
+raw_data_dir <- here::here("raw-data", "MyData")
+data_dir <- here::here("data")
+```
+
+## Streaming History
+
+Prepare the streaming data that is contained in two JSON files.
+
+```{r, echo=TRUE}
+parse_streaming_history <- function(f) {
+  rjson::fromJSON(file = f) %.% {
+    map(as_tibble)
+    bind_rows()
+    janitor::clean_names()
+    mutate(
+      end_time = lubridate::ymd_hm(end_time),
+      sec_played = ms_played / 1e3
+    )
+    select(-ms_played)
+  }
+}
+
+streaming_history <- map_chr(
+  seq(0, 1),
+  ~ glue::glue("StreamingHistory{.x}.json")
+) %>%
+  map(~ file.path(raw_data_dir, .x)) %>%
+  map(parse_streaming_history) %>%
+  bind_rows()
+
+saveRDS(streaming_history, file.path(data_dir, "streaming_history.rds"))
+```
+
+There are four columns in this data frame:
+
+- `end_time`: when the song finished playing
+- `artist_name`: the artist
+- `track_name`: name of the song
+- `sec_played`: duration of the song (in seconds)
+
+```{r}
+head(streaming_history) %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```

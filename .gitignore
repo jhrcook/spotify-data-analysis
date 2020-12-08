@@ -78,4 +78,4 @@ vignettes/*.pdf
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,r
 
-raw-data/
+_raw-data/
