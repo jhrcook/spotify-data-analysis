@@ -2072,6 +2072,8 @@ Data Preparation
 <h3>Contents</h3>
 <ul>
 <li><a href="#streaming-history">Streaming History</a></li>
+<li><a href="#inferences">Inferences</a></li>
+<li><a href="#search-queries">Search Queries</a></li>
 </ul>
 </nav>
 </div>
@@ -2094,7 +2096,7 @@ Data Preparation
 
 <span class='va'>streaming_history</span> <span class='op'>&lt;-</span> <span class='fu'>map_chr</span><span class='op'>(</span>
   <span class='fu'><a href='https://rdrr.io/r/base/seq.html'>seq</a></span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>1</span><span class='op'>)</span>,
-  <span class='op'>~</span> <span class='fu'>glue</span><span class='fu'>::</span><span class='fu'><a href='https://glue.tidyverse.org/reference/glue.html'>glue</a></span><span class='op'>(</span><span class='st'>"StreamingHistory{.x}.json"</span><span class='op'>)</span>
+  <span class='op'>~</span> <span class='fu'>glue</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/glue/man/glue.html'>glue</a></span><span class='op'>(</span><span class='st'>"StreamingHistory{.x}.json"</span><span class='op'>)</span>
 <span class='op'>)</span> <span class='op'>%&gt;%</span>
   <span class='fu'>map</span><span class='op'>(</span><span class='op'>~</span> <span class='fu'><a href='https://rdrr.io/r/base/file.path.html'>file.path</a></span><span class='op'>(</span><span class='va'>raw_data_dir</span>, <span class='va'>.x</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
   <span class='fu'>map</span><span class='op'>(</span><span class='va'>parse_streaming_history</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
@@ -2212,6 +2214,191 @@ Three-Thirty
 </td>
 <td style="text-align:right;">
 210.283
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="inferences">Inferences</h2>
+<p>I am most excited for the “Inferences” data set. Preparing this is still a work in progress and will require looking at their online documentation. From a skim, some interesting notes are:</p>
+<ul>
+<li><code>3P_Politics - Any Republican_US</code>, <code>3P_Politics - Registered Republican_US</code>,<code>3P_Politics - Any Democrat_US</code>, <code>3P_Politics - Registered Democrat_US</code></li>
+<li><code>3P_Custom__CNN_US</code>, <code>3P_Custom__Conservative Affinity TV News_US</code>, <code>3P_Custom__DailyShow_16Oct2020_US</code></li>
+<li><code>3p_Anime_Manga_Enthusiast_Es</code></li>
+<li><code>3P_Women's Apparel_CA</code></li>
+<li><code>3P_Alcohol Consumers_UK</code> (and some others)</li>
+<li><code>3P__Custom_Cigarette Buyers_12Dec2019_US [Do Not Use in 2021]</code></li>
+<li><code>3P_Custom_Netflix_US</code></li>
+<li><code>3P_Custom_Parents of Boys 6-11_US</code>, <code>3P_Custom_Parents of Kids 5-13_28Apr2020_US</code>, <code>3P_Custom_Parents of Toddlers_30Nov2020_US</code>, etc.</li>
+</ul>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre><code><span class='va'>inferences</span> <span class='op'>&lt;-</span> <span class='fu'>rjson</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rjson/man/fromJSON.html'>fromJSON</a></span><span class='op'>(</span>file <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/file.path.html'>file.path</a></span><span class='op'>(</span><span class='va'>raw_data_dir</span>, <span class='st'>"Inferences.json"</span><span class='op'>)</span><span class='op'>)</span>
+<span class='va'>inferences</span> <span class='op'>&lt;-</span> <span class='fu'>tibble</span><span class='op'>(</span>inference <span class='op'>=</span> <span class='va'>inferences</span><span class='op'>$</span><span class='va'>inference</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+inference
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+1P_Custom_Auto_BMW
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+1P_Custom_Discovery_Streamers
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+1P_Custom_Passionate_Curators
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+1P_Custom_Soothing_Sounds
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+1P_Custom_T-Mobile_Switchers
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+1P_Custom_iPhone_11_Users
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="search-queries">Search Queries</h2>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre><code><span class='va'>search_queries</span> <span class='op'>&lt;-</span> <span class='fu'>rjson</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rjson/man/fromJSON.html'>fromJSON</a></span><span class='op'>(</span>file <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/file.path.html'>file.path</a></span><span class='op'>(</span><span class='va'>raw_data_dir</span>, <span class='st'>"SearchQueries.json"</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'>map</span><span class='op'>(</span><span class='kw'>function</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>{</span>
+    <span class='va'>df</span> <span class='op'>&lt;-</span> <span class='fu'>as_tibble</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
+    <span class='va'>df</span><span class='op'>$</span><span class='va'>searchInteractionURIs</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='va'>df</span><span class='op'>$</span><span class='va'>searchInteractionURIs</span><span class='op'>)</span>
+    <span class='kw'><a href='https://rdrr.io/r/base/function.html'>return</a></span><span class='op'>(</span><span class='va'>df</span><span class='op'>)</span>
+  <span class='op'>}</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'>bind_rows</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'>janitor</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/janitor/man/clean_names.html'>clean_names</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'>rename</span><span class='op'>(</span>search_interaction_uris <span class='op'>=</span> <span class='va'>search_interaction_ur_is</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>search_time <span class='op'>=</span> <span class='fu'>lubridate</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/lubridate/man/ymd_hms.html'>ymd_hms</a></span><span class='op'>(</span><span class='va'>search_time</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+platform
+</th>
+<th style="text-align:left;">
+search_time
+</th>
+<th style="text-align:left;">
+search_query
+</th>
+<th style="text-align:left;">
+search_interaction_uris
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+IPHONE_ARM64
+</td>
+<td style="text-align:left;">
+2020-09-23 12:10:35
+</td>
+<td style="text-align:left;">
+stupid
+</td>
+<td style="text-align:left;">
+<a href="spotify:track:23LIOXAz6QSzgPYH4dmZL7" class="uri">spotify:track:23LIOXAz6QSzgPYH4dmZL7</a>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+IPHONE_ARM64
+</td>
+<td style="text-align:left;">
+2020-09-28 13:12:25
+</td>
+<td style="text-align:left;">
+cranber
+</td>
+<td style="text-align:left;">
+<a href="spotify:artist:7t0rwkOPGlDPEhaOcVtOt9" class="uri">spotify:artist:7t0rwkOPGlDPEhaOcVtOt9</a>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+IPHONE_ARM64
+</td>
+<td style="text-align:left;">
+2020-09-30 11:25:01
+</td>
+<td style="text-align:left;">
+blu a
+</td>
+<td style="text-align:left;">
+<a href="spotify:track:2e7SEPyhuReSD8n9E1QOEq" class="uri">spotify:track:2e7SEPyhuReSD8n9E1QOEq</a>, <a href="spotify:album:5bDUKo7gGyXWDkbLXai0gI" class="uri">spotify:album:5bDUKo7gGyXWDkbLXai0gI</a>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+IPHONE_ARM64
+</td>
+<td style="text-align:left;">
+2020-09-30 11:25:01
+</td>
+<td style="text-align:left;">
+blu a
+</td>
+<td style="text-align:left;">
+<a href="spotify:track:2e7SEPyhuReSD8n9E1QOEq" class="uri">spotify:track:2e7SEPyhuReSD8n9E1QOEq</a>, <a href="spotify:album:5bDUKo7gGyXWDkbLXai0gI" class="uri">spotify:album:5bDUKo7gGyXWDkbLXai0gI</a>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+IPHONE_ARM64
+</td>
+<td style="text-align:left;">
+2020-10-15 15:57:13
+</td>
+<td style="text-align:left;">
+coffee
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:37i9dQZF1DX6ziVCJnEm59" class="uri">spotify:playlist:37i9dQZF1DX6ziVCJnEm59</a>, <a href="spotify:track:4CxmynXhw78QefruycvxG8" class="uri">spotify:track:4CxmynXhw78QefruycvxG8</a>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+IPHONE_ARM64
+</td>
+<td style="text-align:left;">
+2020-10-15 15:57:13
+</td>
+<td style="text-align:left;">
+coffee
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:37i9dQZF1DX6ziVCJnEm59" class="uri">spotify:playlist:37i9dQZF1DX6ziVCJnEm59</a>, <a href="spotify:track:4CxmynXhw78QefruycvxG8" class="uri">spotify:track:4CxmynXhw78QefruycvxG8</a>
 </td>
 </tr>
 </tbody>

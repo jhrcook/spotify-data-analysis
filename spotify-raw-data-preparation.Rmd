@@ -65,7 +65,58 @@ There are four columns in this data frame:
 - `sec_played`: duration of the song (in seconds)
 
 ```{r}
-head(streaming_history) %>%
-  kbl() %>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
+display_head <- function(df) {
+  df %>%
+    head() %>%
+    kbl() %>%
+    kable_styling(bootstrap_options = c("striped", "hover"))
+}
+
+display_head(streaming_history)
+```
+
+## Inferences
+
+I am most excited for the "Inferences" data set.
+Preparing this is still a work in progress and will require looking at their online documentation.
+From a skim, some interesting notes are:
+
+- `3P_Politics - Any Republican_US`, `3P_Politics - Registered Republican_US`,`3P_Politics - Any Democrat_US`, `3P_Politics - Registered Democrat_US`
+- `3P_Custom__CNN_US`, `3P_Custom__Conservative Affinity TV News_US`, `3P_Custom__DailyShow_16Oct2020_US`
+- `3p_Anime_Manga_Enthusiast_Es`
+- `3P_Women's Apparel_CA`
+- `3P_Alcohol Consumers_UK` (and some others)
+- `3P__Custom_Cigarette Buyers_12Dec2019_US [Do Not Use in 2021]`
+- `3P_Custom_Netflix_US`
+- `3P_Custom_Parents of Boys 6-11_US`, `3P_Custom_Parents of Kids 5-13_28Apr2020_US`, `3P_Custom_Parents of Toddlers_30Nov2020_US`, etc.
+
+```{r, echo=TRUE}
+inferences <- rjson::fromJSON(file = file.path(raw_data_dir, "Inferences.json"))
+inferences <- tibble(inference = inferences$inference)
+```
+
+```{r}
+saveRDS(inferences, file.path(data_dir, "inferences.rds"))
+display_head(inferences)
+```
+
+## Search Queries
+
+```{r, echo=TRUE}
+search_queries <- rjson::fromJSON(file = file.path(raw_data_dir, "SearchQueries.json")) %>%
+  head() %>%
+  map(function(x) {
+    df <- as_tibble(x)
+    df$searchInteractionURIs <- list(df$searchInteractionURIs)
+    return(df)
+  }) %>%
+  bind_rows() %>%
+  janitor::clean_names() %>%
+  rename(search_interaction_uris = search_interaction_ur_is) %>%
+  mutate(search_time = lubridate::ymd_hms(search_time))
+```
+
+```{r}
+saveRDS(search_queries, file.path(data_dir, "search_queries.rds"))
+display_head(search_queries)
 ```
