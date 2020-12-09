@@ -1,9 +1,18 @@
 ---
-title: "About this site"
+title: "About"
 description: |
-  Some additional details about the website
+  A bit of information about my Spotify data analysis website.
+date: "`r Sys.Date()`"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
+
+As mentioned in the introduction, Spotify allows its users to download the information the music company has about them.
+I thought this could be interesting, so I downloaded my information and dug into it.
+The entire data preparation and analysis is presented in this website.
+
+If you see any mistakes (including the smallest of typos) or have any questions, please feel free to open an [issue](https://github.com/jhrcook/spotify-data-analysis/issues) or start a [discussion](https://github.com/jhrcook/spotify-data-analysis/discussions) on GitHub.
+If you are interested in looking at my other work, I try to make as many of my projects available on [GitHub](https://github.com/jhrcook) and my [website](https://joshuacook.netlify.app).
+You can also follow me one [Twitter](https://twitter.com/JoshDoesA).

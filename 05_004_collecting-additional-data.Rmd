@@ -1,0 +1,27 @@
+---
+title: "Collecting song and artist data"
+description: |
+  Annotating the data downloaded from Spotify with more specific and descriptive data using Spotify's API.
+author:
+  - first_name: "Joshua"
+    last_name: "Cook"
+    url: https://joshuacook.netlify.app
+    orcid_id: 0000-0001-9815-6879
+date: "`r Sys.Date()`"
+output:
+  distill::distill_article:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment = "#>")
+
+library(tidyverse)
+```
+
+```{r}
+stupid_deep_id <- "23LIOXAz6QSzgPYH4dmZL7"
+track_info <- spotifyr::get_track(stupid_deep_id)
+track_features <- spotifyr::get_track_audio_features(stupid_deep_id)
+track_analysis <- spotifyr::get_track_audio_analysis(stupid_deep_id)
+```

@@ -85,32 +85,33 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </style>
 
   <!--radix_placeholder_meta_tags-->
-  <title>Personal Spotify Data Analysis: About</title>
+  <title>Personal Spotify Data Analysis: Analyzing my streaming history</title>
 
-  <meta property="description" itemprop="description" content="A bit of information about my Spotify data analysis website."/>
+  <meta property="description" itemprop="description" content="Identifying trends in my listening habits."/>
 
 
   <!--  https://schema.org/Article -->
   <meta property="article:published" itemprop="datePublished" content="2020-12-08"/>
   <meta property="article:created" itemprop="dateCreated" content="2020-12-08"/>
+  <meta name="article:author" content="Joshua Cook"/>
 
   <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
-  <meta property="og:title" content="Personal Spotify Data Analysis: About"/>
+  <meta property="og:title" content="Personal Spotify Data Analysis: Analyzing my streaming history"/>
   <meta property="og:type" content="article"/>
-  <meta property="og:description" content="A bit of information about my Spotify data analysis website."/>
+  <meta property="og:description" content="Identifying trends in my listening habits."/>
   <meta property="og:locale" content="en_US"/>
   <meta property="og:site_name" content="Personal Spotify Data Analysis"/>
 
   <!--  https://dev.twitter.com/cards/types/summary -->
   <meta property="twitter:card" content="summary"/>
-  <meta property="twitter:title" content="Personal Spotify Data Analysis: About"/>
-  <meta property="twitter:description" content="A bit of information about my Spotify data analysis website."/>
+  <meta property="twitter:title" content="Personal Spotify Data Analysis: Analyzing my streaming history"/>
+  <meta property="twitter:description" content="Identifying trends in my listening habits."/>
 
   <!--/radix_placeholder_meta_tags-->
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","date"]}},"value":[{"type":"character","attributes":{},"value":["About"]},{"type":"character","attributes":{},"value":["A bit of information about my Spotify data analysis website.\n"]},{"type":"character","attributes":{},"value":["2020-12-08"]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Analyzing my streaming history"]},{"type":"character","attributes":{},"value":["Identifying trends in my listening habits.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["first_name","last_name","url","orcid_id"]}},"value":[{"type":"character","attributes":{},"value":["Joshua"]},{"type":"character","attributes":{},"value":["Cook"]},{"type":"character","attributes":{},"value":["https://joshuacook.netlify.app"]},{"type":"character","attributes":{},"value":["0000-0001-9815-6879"]}]}]},{"type":"character","attributes":{},"value":["2020-12-08"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc"]}},"value":[{"type":"logical","attributes":{},"value":[true]}]}]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   <!--radix_placeholder_navigation_in_header-->
@@ -2008,7 +2009,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"About","description":"A bit of information about my Spotify data analysis website.","authors":[],"publishedDate":"2020-12-08T00:00:00.000+00:00"}
+{"title":"Analyzing my streaming history","description":"Identifying trends in my listening habits.","authors":[{"author":"Joshua Cook","authorURL":"https://joshuacook.netlify.app","affiliation":"&nbsp;","affiliationURL":"#","orcidID":"0000-0001-9815-6879"}],"publishedDate":"2020-12-08T00:00:00.000+00:00","citationText":"Cook, 2020"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -2060,16 +2061,38 @@ Analysis
 <!--/radix_placeholder_site_before_body-->
 
 <div class="d-title">
-<h1>About</h1>
+<h1>Analyzing my streaming history</h1>
 <!--radix_placeholder_categories-->
 <!--/radix_placeholder_categories-->
-<p><p>A bit of information about my Spotify data analysis website.</p></p>
+<p><p>Identifying trends in my listening habits.</p></p>
 </div>
 
+<div class="d-byline">
+
+  true
+
+<br/>2020-12-08
+</div>
 
 <div class="d-article">
-<p>As mentioned in the introduction, Spotify allows its users to download the information the music company has about them. I thought this could be interesting, so I downloaded my information and dug into it. The entire data preparation and analysis is presented in this website.</p>
-<p>If you see any mistakes (including the smallest of typos) or have any questions, please feel free to open an <a href="https://github.com/jhrcook/spotify-data-analysis/issues">issue</a> or start a <a href="https://github.com/jhrcook/spotify-data-analysis/discussions">discussion</a> on GitHub. If you are interested in looking at my other work, I try to make as many of my projects available on <a href="https://github.com/jhrcook">GitHub</a> and my <a href="https://joshuacook.netlify.app">website</a>. You can also follow me one <a href="https://twitter.com/JoshDoesA">Twitter</a>.</p>
+<div class="layout-chunk" data-layout="l-body">
+<p><img src="10_005_analyzing-my-streaming-history_files/figure-html5/unnamed-chunk-1-1.png" width="624" /></p>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<p><img src="10_005_analyzing-my-streaming-history_files/figure-html5/unnamed-chunk-2-1.png" width="624" /></p>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<p><img src="10_005_analyzing-my-streaming-history_files/figure-html5/unnamed-chunk-3-1.png" width="624" /></p>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<p><img src="10_005_analyzing-my-streaming-history_files/figure-html5/unnamed-chunk-4-1.png" width="624" /></p>
+</div>
+<p>interesting ideas:</p>
+<ul>
+<li>same plot as above, but for artists</li>
+<li>look at what proportion of the songs I listened to came from the top-artists</li>
+<li>look at variability in songs listened to over time</li>
+</ul>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->

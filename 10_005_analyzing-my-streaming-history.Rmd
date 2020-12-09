@@ -1,0 +1,158 @@
+---
+title: "Analyzing my streaming history"
+description: |
+  Identifying trends in my listening habits.
+author:
+  - first_name: "Joshua"
+    last_name: "Cook"
+    url: https://joshuacook.netlify.app
+    orcid_id: 0000-0001-9815-6879
+date: "`r Sys.Date()`"
+output:
+  distill::distill_article:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment = "#>")
+
+library(nakedpipe)
+library(ggthemes)
+library(tidyverse)
+
+theme_set(ggthemes::theme_fivethirtyeight())
+
+walk(list.files("lib", pattern = "R$", full.names = TRUE), source)
+
+streaming_history <- readRDS(here::here("data", "streaming_history.rds"))
+```
+
+```{r}
+plot_barcount <- function(df, x, y, x_lbl, title, nudge_text = 11, expand_x = 0.08) {
+  df %.%
+    {
+      mutate(label = scales::comma({{ x }}, accuracy = 1))
+    } %>%
+    ggplot(aes(x = {{ x }}, y = {{ y }})) +
+    geom_col() +
+    geom_text(
+      aes(label = label),
+      hjust = 0,
+      family = "Helvetica",
+      size = 3.5,
+      nudge_x = nudge_text
+    ) +
+    scale_x_continuous(expand = expansion(c(0, expand_x))) +
+    theme_fivethirtyeight() +
+    theme(
+      panel.grid.major.y = element_blank(),
+      axis.title.x = element_text()
+    ) +
+    labs(
+      x = x_lbl,
+      y = NULL,
+      title = title
+    )
+}
+
+streaming_history %.%
+  {
+    count(artist_name, sort = TRUE, name = "n")
+    head(10)
+    mutate(artist_name = fct_rev(fct_inorder(artist_name)))
+  } %>%
+  plot_barcount(
+    x = n,
+    y = artist_name,
+    x_lbl = "number of times listened",
+    title = "Top-10 most listened to artists"
+  )
+```
+
+```{r}
+streaming_history %.%
+  {
+    count(track_name, artist_name, sort = TRUE, name = "n")
+    head(10)
+    mutate(track_name = fct_rev(fct_inorder(track_name)))
+  } %>%
+  plot_barcount(
+    x = n,
+    y = track_name,
+    x_lbl = "number of times listened",
+    title = "Top-10 most listened to songs",
+    nudge_text = 2,
+    expand_x = 0.06
+  )
+```
+
+```{r}
+ignore_top_artists <- c(
+  "Background Noise From TraxLab", "Ambient Sounds from I'm In Records"
+)
+
+top_artists <- streaming_history %.% {
+  filter(!artist_name %in% !!ignore_top_artists)
+  count(artist_name, sort = TRUE)
+  head(6)
+  pull(artist_name)
+  unlist()
+  unique()
+}
+
+streaming_history %.%
+  {
+    filter(artist_name %in% !!top_artists)
+    group_by(artist_name)
+    count(track_name, sort = TRUE)
+    slice(1:5)
+    ungroup()
+    mutate(track_name = fct_rev(fct_inorder(track_name)))
+  } %>%
+  plot_barcount(
+    x = n,
+    y = track_name,
+    x_lbl = "number of times listened",
+    title = "Top songs of my favorite artists",
+    nudge_text = 3,
+    expand_x = 0.20
+  ) +
+  facet_wrap(~artist_name, ncol = 2, scales = "free") +
+  theme(strip.text = element_text(face = "bold"))
+```
+
+```{r}
+top_songs <- streaming_history %.% {
+  count(artist_name, track_name, sort = TRUE)
+  head(6)
+  select(track_name, artist_name)
+}
+
+streaming_history %.%
+  {
+    mutate(date = lubridate::floor_date(end_time, unit = "month"))
+    count(date, artist_name, track_name)
+    right_join(top_songs, by = c("track_name", "artist_name"))
+  } %>%
+  ggplot(aes(x = date, y = n, color = track_name)) +
+  geom_line() +
+  geom_point() +
+  scale_color_excel_new(
+    "Atlas",
+    labels = function(x) {
+      str_wrap(x, width = 25)
+    },
+    guide = guide_legend(nrow = 2, title = NULL)
+  ) +
+  labs(
+    title = "The frequency of my most-listened-to songs"
+  )
+
+# TODO: Add general trend-line number of songs listened to over the months.
+```
+
+interesting ideas:
+
+- same plot as above, but for artists
+- look at what proportion of the songs I listened to came from the top-artists
+- look at variability in songs listened to over time

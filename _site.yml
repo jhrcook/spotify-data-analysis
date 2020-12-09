@@ -14,7 +14,11 @@ navbar:
     - text: "Data Preparation"
       menu:
         - text: "Preparing the downloaded files"
-          href: spotify-raw-data-preparation.html
+          href: 05_002_spotify-raw-data-preparation.html
+    - text: "Analysis"
+      menu:
+        - text: "Analyzing my streaming history"
+          href: 10_005_analyzing-my-streaming-history.html
     - text: "About"
       href: about.html
     - icon: fab fa-github
