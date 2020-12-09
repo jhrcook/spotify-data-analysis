@@ -2077,8 +2077,19 @@ Data Preparation
 </ul>
 </nav>
 </div>
+<p>Here, I read in and organized the raw data provided by Spotify. The raw data is provided as JSON, so I converted into tidy data frames. I have not provided the raw data used here because there is some potentially private/financial information, but the results of the processing below are public. More information about the data can be found in Spotify’s <a href="https://support.spotify.com/uk/article/understanding-my-data/"><em>Understanding my Data</em></a> page.</p>
 <h2 id="streaming-history">Streaming History</h2>
-<p>Prepare the streaming data that is contained in two JSON files.</p>
+<p>Spotify’s description:</p>
+<blockquote>
+<p>A list of items (e.g. songs, videos, and podcasts) listened to or watched in the past year, including:</p>
+<ol type="1">
+<li>Date and time of when the stream ended in UTC format (Coordinated Universal Time zone).</li>
+<li>Name of “creator” for each stream (e.g. the artist name if a music track).</li>
+<li>Name of items listened to or watched (e.g. title of music track or name of video).</li>
+<li>“msPlayed”- Stands for how many mili-seconds the track was listened.</li>
+</ol>
+</blockquote>
+<p>Below is the code to prepare the streaming history data that was contained in two JSON files.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre><code><span class='va'>parse_streaming_history</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>f</span><span class='op'>)</span> <span class='op'>{</span>
@@ -2087,7 +2098,7 @@ Data Preparation
     <span class='fu'>bind_rows</span><span class='op'>(</span><span class='op'>)</span>
     <span class='fu'>janitor</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/janitor/man/clean_names.html'>clean_names</a></span><span class='op'>(</span><span class='op'>)</span>
     <span class='fu'>mutate</span><span class='op'>(</span>
-      end_time <span class='op'>=</span> <span class='fu'>lubridate</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/lubridate/man/ymd_hms.html'>ymd_hm</a></span><span class='op'>(</span><span class='va'>end_time</span><span class='op'>)</span>,
+      end_time <span class='op'>=</span> <span class='fu'>lubridate</span><span class='fu'>::</span><span class='fu'><a href='http://lubridate.tidyverse.org/reference/ymd_hms.html'>ymd_hm</a></span><span class='op'>(</span><span class='va'>end_time</span><span class='op'>)</span>,
       sec_played <span class='op'>=</span> <span class='va'>ms_played</span> <span class='op'>/</span> <span class='fl'>1e3</span>
     <span class='op'>)</span>
     <span class='fu'>select</span><span class='op'>(</span><span class='op'>-</span><span class='va'>ms_played</span><span class='op'>)</span>
@@ -2096,7 +2107,7 @@ Data Preparation
 
 <span class='va'>streaming_history</span> <span class='op'>&lt;-</span> <span class='fu'>map_chr</span><span class='op'>(</span>
   <span class='fu'><a href='https://rdrr.io/r/base/seq.html'>seq</a></span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>1</span><span class='op'>)</span>,
-  <span class='op'>~</span> <span class='fu'>glue</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/glue/man/glue.html'>glue</a></span><span class='op'>(</span><span class='st'>"StreamingHistory{.x}.json"</span><span class='op'>)</span>
+  <span class='op'>~</span> <span class='fu'>glue</span><span class='fu'>::</span><span class='fu'><a href='https://glue.tidyverse.org/reference/glue.html'>glue</a></span><span class='op'>(</span><span class='st'>"StreamingHistory{.x}.json"</span><span class='op'>)</span>
 <span class='op'>)</span> <span class='op'>%&gt;%</span>
   <span class='fu'>map</span><span class='op'>(</span><span class='op'>~</span> <span class='fu'><a href='https://rdrr.io/r/base/file.path.html'>file.path</a></span><span class='op'>(</span><span class='va'>raw_data_dir</span>, <span class='va'>.x</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
   <span class='fu'>map</span><span class='op'>(</span><span class='va'>parse_streaming_history</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
@@ -2220,7 +2231,11 @@ Three-Thirty
 </table>
 </div>
 <h2 id="inferences">Inferences</h2>
-<p>I am most excited for the “Inferences” data set. Preparing this is still a work in progress and will require looking at their online documentation. From a skim, some interesting notes are:</p>
+<p>Spotify’s description:</p>
+<blockquote>
+<p>We draw certain inferences about your interests and preferences based on your usage of the Spotify service and using data obtained from our advertisers and other advertising partners. This includes a list of market segments with which you are currently associated. Depending on your settings, this data may be used to serve interest-based advertising to you within the Spotify service.</p>
+</blockquote>
+<p>I am most excited to dig into this “Inferences” data set. From a skim, some interesting notes are:</p>
 <ul>
 <li><code>3P_Politics - Any Republican_US</code>, <code>3P_Politics - Registered Republican_US</code>,<code>3P_Politics - Any Democrat_US</code>, <code>3P_Politics - Registered Democrat_US</code></li>
 <li><code>3P_Custom__CNN_US</code>, <code>3P_Custom__Conservative Affinity TV News_US</code>, <code>3P_Custom__DailyShow_16Oct2020_US</code></li>
@@ -2231,6 +2246,7 @@ Three-Thirty
 <li><code>3P_Custom_Netflix_US</code></li>
 <li><code>3P_Custom_Parents of Boys 6-11_US</code>, <code>3P_Custom_Parents of Kids 5-13_28Apr2020_US</code>, <code>3P_Custom_Parents of Toddlers_30Nov2020_US</code>, etc.</li>
 </ul>
+<p>This JSON file was just a single list, so I turned it into a one-column data frame.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre><code><span class='va'>inferences</span> <span class='op'>&lt;-</span> <span class='fu'>rjson</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rjson/man/fromJSON.html'>fromJSON</a></span><span class='op'>(</span>file <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/file.path.html'>file.path</a></span><span class='op'>(</span><span class='va'>raw_data_dir</span>, <span class='st'>"Inferences.json"</span><span class='op'>)</span><span class='op'>)</span>
@@ -2282,6 +2298,11 @@ inference
 </table>
 </div>
 <h2 id="search-queries">Search Queries</h2>
+<p>Spotify’s description:</p>
+<blockquote>
+<p>A list of searches made, including: 1. The date and time the search was made. 2. Type of device/platform used (such as iOS, desktop). 3. Search Query shows what the user typed in the search field. 4. Search interaction URIs shows the list of Uniform Resource Identifiers (URI) of the search results the user interacted with.</p>
+</blockquote>
+<p>The only quirk of this data was that there could be multiple <em>search interaction URIs</em> for a single query. I decided to keep each query as a single row and have the URIs kept as a list data type in the column. For later analysis, it might be best to assign a search query index and unnest this column.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre><code><span class='va'>search_queries</span> <span class='op'>&lt;-</span> <span class='fu'>rjson</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/rjson/man/fromJSON.html'>fromJSON</a></span><span class='op'>(</span>file <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/file.path.html'>file.path</a></span><span class='op'>(</span><span class='va'>raw_data_dir</span>, <span class='st'>"SearchQueries.json"</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
@@ -2294,7 +2315,7 @@ inference
   <span class='fu'>bind_rows</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
   <span class='fu'>janitor</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/janitor/man/clean_names.html'>clean_names</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
   <span class='fu'>rename</span><span class='op'>(</span>search_interaction_uris <span class='op'>=</span> <span class='va'>search_interaction_ur_is</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
-  <span class='fu'>mutate</span><span class='op'>(</span>search_time <span class='op'>=</span> <span class='fu'>lubridate</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/lubridate/man/ymd_hms.html'>ymd_hms</a></span><span class='op'>(</span><span class='va'>search_time</span><span class='op'>)</span><span class='op'>)</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>search_time <span class='op'>=</span> <span class='fu'>lubridate</span><span class='fu'>::</span><span class='fu'><a href='http://lubridate.tidyverse.org/reference/ymd_hms.html'>ymd_hms</a></span><span class='op'>(</span><span class='va'>search_time</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
 </div>

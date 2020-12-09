@@ -28,9 +28,23 @@ raw_data_dir <- here::here("_raw-data", "MyData")
 data_dir <- here::here("data")
 ```
 
+Here, I read in and organized the raw data provided by Spotify.
+The raw data is provided as JSON, so I converted into tidy data frames.
+I have not provided the raw data used here because there is some potentially private/financial information, but the results of the processing below are public.
+More information about the data can be found in Spotify's [*Understanding my Data*](https://support.spotify.com/uk/article/understanding-my-data/) page.
+
 ## Streaming History
 
-Prepare the streaming data that is contained in two JSON files.
+Spotify's description:
+
+> A list of items (e.g. songs, videos, and podcasts) listened to or watched in the past year, including:
+>
+> 1. Date and time of when the stream ended in UTC format (Coordinated Universal Time zone).
+> 2. Name of "creator" for each stream (e.g. the artist name if a music track).
+> 3. Name of items listened to or watched (e.g. title of music track or name of video).
+> 4. “msPlayed”- Stands for how many mili-seconds the track was listened.
+
+Below is the code to prepare the streaming history data that was contained in two JSON files.
 
 ```{r, echo=TRUE}
 parse_streaming_history <- function(f) {
@@ -77,8 +91,13 @@ display_head(streaming_history)
 
 ## Inferences
 
-I am most excited for the "Inferences" data set.
-Preparing this is still a work in progress and will require looking at their online documentation.
+Spotify's description:
+
+> We draw certain inferences about your interests and preferences based on your usage of the Spotify service and using data obtained from our advertisers and other advertising partners.
+> This includes a list of market segments with which you are currently associated.
+> Depending on your settings, this data may be used to serve interest-based advertising to you within the Spotify service.
+
+I am most excited to dig into this "Inferences" data set.
 From a skim, some interesting notes are:
 
 - `3P_Politics - Any Republican_US`, `3P_Politics - Registered Republican_US`,`3P_Politics - Any Democrat_US`, `3P_Politics - Registered Democrat_US`
@@ -89,6 +108,8 @@ From a skim, some interesting notes are:
 - `3P__Custom_Cigarette Buyers_12Dec2019_US [Do Not Use in 2021]`
 - `3P_Custom_Netflix_US`
 - `3P_Custom_Parents of Boys 6-11_US`, `3P_Custom_Parents of Kids 5-13_28Apr2020_US`, `3P_Custom_Parents of Toddlers_30Nov2020_US`, etc.
+
+This JSON file was just a single list, so I turned it into a one-column data frame.
 
 ```{r, echo=TRUE}
 inferences <- rjson::fromJSON(file = file.path(raw_data_dir, "Inferences.json"))
@@ -101,6 +122,18 @@ display_head(inferences)
 ```
 
 ## Search Queries
+
+Spotify's description:
+
+> A list of searches made, including:
+> 1. The date and time the search was made.
+> 2. Type of device/platform used (such as iOS, desktop).
+> 3. Search Query shows what the user typed in the search field.
+> 4. Search interaction URIs shows the list of Uniform Resource Identifiers (URI) of the search results the user interacted with.
+
+The only quirk of this data was that there could be multiple *search interaction URIs* for a single query.
+I decided to keep each query as a single row and have the URIs kept as a list data type in the column.
+For later analysis, it might be best to assign a search query index and unnest this column.
 
 ```{r, echo=TRUE}
 search_queries <- rjson::fromJSON(file = file.path(raw_data_dir, "SearchQueries.json")) %>%
