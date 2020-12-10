@@ -14,7 +14,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, comment = "#>")
+knitr::opts_chunk$set(echo = FALSE, comment = "#>", dpi = 500)
 
 library(nakedpipe)
 library(magrittr)
@@ -46,20 +46,28 @@ notable_lengths <- tibble(
 
 # TODO: cover the [0 -> min_song_len] with an area (replacing the dashed line)
 
-streaming_history %.%
-  {
-
-  } %>%
+streaming_history %>%
   ggplot(aes(x = sec_played)) +
   geom_density(fill = pal_538["Medium Gray"], alpha = 0.7) +
+  geom_rect(
+    data = tibble(sec_played = 0),
+    xmin = 0, xmax = min_song_length,
+    ymin = 0, ymax = Inf,
+    fill = "grey20",
+    alpha = 0.2,
+    color = NA
+  ) +
   geom_vline(
     xintercept = min_song_length,
-    color = pal_538["Dark Gray"],
-    lty = 2
+    color = "grey35",
+    lty = 2,
+    alpha = 0.8
   ) +
   geom_vline(
     aes(xintercept = length, color = song),
-    data = notable_lengths
+    data = notable_lengths,
+    size = 1,
+    alpha = 0.8
   ) +
   geom_label(
     aes(label = song, x = x, y = y, color = song),
@@ -71,21 +79,66 @@ streaming_history %.%
     family = "sans",
     fontface = "bold"
   ) +
-  scale_x_continuous(expand = expansion(mult = c(0, 0.02))) +
+  scale_x_continuous(
+    expand = expansion(mult = c(0, 0.02)),
+    limits = c(0, 600),
+    breaks = seq(0, 10, 2) * 60,
+    labels = function(x) {
+      round(x / 60, 1)
+    }
+  ) +
   scale_y_continuous(
     expand = expansion(mult = c(0, 0)),
     limits = c(0, 0.012)
   ) +
   scale_color_fivethirtyeight() +
   theme(
-    axis.title = element_text()
+    axis.title = element_text(),
+    legend.position = "none"
   ) +
   labs(
-    x = "length listened to the song",
+    x = "time spent listening to a song (min)",
     y = "density",
-    title = "The distribution of listening durations"
+    title = "The distribution of play time",
+    subtitle = paste(
+      "Most songs were listened to for about 2-5 minutes. Some example song",
+      "durations are labeled. The far-left peak (highlighted in grey) represents",
+      "songs that were quickly skipped.",
+      sep = "\n"
+    )
   )
 ```
+
+```{r}
+streaming_history %.%
+  {
+    mutate(
+      cum_sec_played = cumsum(sec_played),
+      cum_hour_played = cum_sec_played / 60 / 60
+    )
+  } %>%
+  ggplot(aes(x = end_time, y = cum_hour_played)) +
+  geom_ribbon(
+    aes(ymin = 0, ymax = cum_hour_played),
+    alpha = 0.2,
+    fill = spotify_dark
+  ) +
+  geom_line(size = 1, color = spotify_green) +
+  scale_x_datetime(
+    date_breaks = "2 months",
+    date_labels = "%b %Y",
+    expand = expansion(add = c(0, 0))
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.02))) +
+  theme(
+    axis.title.y = element_text()
+  ) +
+  labs(
+    y = "time (hours)",
+    title = "Cumulative time spent listening to Spotify"
+  )
+```
+
 
 ```{r}
 streaming_history %<>% filter(sec_played >= min_song_length)
@@ -100,7 +153,16 @@ streaming_history %.%
   } %>%
   ggplot(aes(x = date, y = n)) +
   geom_point(alpha = 0.8) +
-  geom_smooth(method = "loess", formula = "y~x", color = pal_538["Blue"]) +
+  geom_smooth(
+    method = "loess",
+    formula = "y~x",
+    color = spotify_green
+  ) +
+  scale_x_datetime(
+    date_breaks = "2 months",
+    date_labels = "%b %Y",
+    expand = expansion(add = c(0, 0))
+  ) +
   theme(
     axis.title.y = element_text()
   ) +
@@ -112,13 +174,15 @@ streaming_history %.%
 
 
 ```{r}
-plot_barcount <- function(df, x, y, x_lbl, title, nudge_text = 11, expand_x = 0.08, wrap_y = Inf) {
+plot_barcount <- function(df, x, y,
+                          x_lbl, title,
+                          nudge_text = 11, expand_x = 0.08, wrap_y = Inf) {
   df %.%
     {
       mutate(label = scales::comma({{ x }}, accuracy = 1))
     } %>%
     ggplot(aes(x = {{ x }}, y = {{ y }})) +
-    geom_col() +
+    geom_col(fill = spotify_dark2, color = NA) +
     geom_text(
       aes(label = label),
       hjust = 0,
@@ -151,6 +215,7 @@ streaming_history %.%
     y = artist_name,
     x_lbl = "number of times listened",
     title = "Top-10 most listened to artists",
+    expand_x = 0.11,
     wrap_y = 30
   )
 ```
@@ -173,7 +238,7 @@ streaming_history %.%
   )
 ```
 
-```{r, fig.height=5}
+```{r, fig.height=6}
 ignore_top_artists <- c(
   "Background Noise From TraxLab", "Ambient Sounds from I'm In Records"
 )
@@ -232,16 +297,15 @@ streaming_history %.%
     },
     guide = guide_legend(nrow = 2, title = NULL)
   ) +
+  scale_x_datetime(date_breaks = "2 months", date_labels = "%b %Y") +
   labs(
     title = "The frequency of my top songs",
     subtitle = "The number of times each song was played per month."
   )
-
-# TODO: Add general trend-line number of songs listened to over the months.
 ```
 
-```{r, fig.height=10, fig.width=8}
-pal <- c(excel_new_pal("Atlas")(6), "other" = pal_538[["Medium Gray"]])
+```{r, fig.height=10}
+pal <- c(excel_new_pal("Atlas")(6), "other" = pal_538[["Dark Gray"]])
 
 streaming_history %.%
   {
@@ -253,9 +317,18 @@ streaming_history %.%
   } %>%
   ggplot(aes(x = date, y = n, color = artist_name)) +
   facet_wrap(artist_name ~ ., scales = "free_y", ncol = 1) +
-  geom_col(aes(color = artist_name, fill = artist_name), position = "dodge", alpha = 0.5) +
-  # geom_point(size = 0.2, alpha = 0.4) +
-  geom_smooth(alpha = 0.7, se = FALSE, span = 0.5) +
+  geom_col(
+    aes(color = artist_name, fill = artist_name),
+    position = "dodge",
+    alpha = 0.5
+  ) +
+  geom_smooth(
+    method = "loess",
+    formula = "y~x",
+    alpha = 0.7,
+    se = FALSE,
+    span = 0.5
+  ) +
   scale_color_manual(values = pal) +
   scale_fill_manual(values = pal) +
   theme(
@@ -274,17 +347,33 @@ streaming_history %.%
   {
     filter(artist_name == "Quinn XCII")
     mutate(
-      track_name = fct_lump_n(track_name, n = length(pal) - 1, other_level = "other"),
+      track_name = fct_lump_n(
+        track_name,
+        n = length(pal) - 1,
+        other_level = "other"
+      ),
       date = lubridate::floor_date(end_time, "month"),
     )
     count(date, track_name)
   } %>%
-  ggplot(aes(x = date, y = n, color = track_name, fill = track_name)) +
+  ggplot(
+    aes(x = date, y = n, color = track_name, fill = track_name)
+  ) +
   geom_col(position = "stack") +
-  scale_color_manual(values = pal) +
-  scale_fill_manual(values = pal) +
+  scale_color_manual(
+    values = pal
+  ) +
+  scale_fill_manual(
+    values = pal
+  ) +
+  scale_x_datetime(
+    date_breaks = "2 months",
+    date_labels = "%b %Y",
+    expand = expansion(add = c(0, 0))
+  ) +
   theme(
-    legend.position = "top"
+    legend.position = "top",
+    legend.key.size = unit(0.5, "cm"),
   ) +
   labs(
     y = "times listened",
@@ -294,9 +383,43 @@ streaming_history %.%
   )
 ```
 
+```{r}
+sec_axis_coef <- 2
+artist_color <- pal_538[["Red"]]
+track_color <- pal_538[["Blue"]]
+
+streaming_history %.%
+  {
+    mutate(mo_year = lubridate::floor_date(end_time, "month"))
+    group_by(mo_year)
+    summarise(
+      num_artists = n_distinct(artist_name),
+      num_tracks = n_distinct(track_name)
+    )
+    ungroup()
+    mutate(num_tracks = num_tracks / sec_axis_coef)
+  } %>%
+  ggplot(aes(x = mo_year)) +
+  geom_line(aes(y = num_artists), color = artist_color, alpha = 0.7) +
+  geom_line(aes(y = num_tracks), color = track_color, alpha = 0.7) +
+  geom_point(aes(y = num_artists), color = artist_color) +
+  geom_point(aes(y = num_tracks), color = track_color) +
+  scale_y_continuous(
+    name = "num. artists",
+    sec.axis = sec_axis(~ . * sec_axis_coef, name = "num. tracks")
+  ) +
+  scale_x_datetime(
+    date_breaks = "2 months",
+    date_labels = "%b %Y"
+  ) +
+  theme(
+    axis.title.y = element_text(color = colorspace::darken(artist_color)),
+    axis.title.y.right = element_text(color = colorspace::darken(track_color))
+  ) +
+  labs(
+    title = "Variability in artists and songs",
+    subtitle = "The number of different artists (red) and songs (blue) listened to each month."
+  )
+```
 
 interesting ideas:
-
-- same plot as above, but for artists
-- look at what proportion of the songs I listened to came from the top-artists
-- look at variability in songs listened to over time
