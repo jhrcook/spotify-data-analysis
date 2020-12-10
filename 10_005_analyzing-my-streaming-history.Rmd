@@ -17,18 +17,102 @@ output:
 knitr::opts_chunk$set(echo = FALSE, comment = "#>")
 
 library(nakedpipe)
+library(magrittr)
 library(ggthemes)
+library(ggrepel)
 library(tidyverse)
 
 theme_set(ggthemes::theme_fivethirtyeight())
+pal_538 <- deframe(ggthemes_data[["fivethirtyeight"]])
 
 walk(list.files("lib", pattern = "R$", full.names = TRUE), source)
 
 streaming_history <- readRDS(here::here("data", "streaming_history.rds"))
+
+min_song_length <- 60 * 1
+```
+
+Minimum length of a song `r round(min_song_length, 1)` seconds.
+
+```{r}
+notable_lengths <- tibble(
+  song = c("Stacy", "Good Things Fall Apart", "Choices"),
+  length = c("2:49", "3:37", "6:28"),
+  x = c(169, 217, 388),
+  y = c(0.010, 0.010, 0.0112)
+) %.% {
+  mutate(length = as.numeric(lubridate::ms(length)))
+}
+
+# TODO: cover the [0 -> min_song_len] with an area (replacing the dashed line)
+
+streaming_history %.%
+  {
+
+  } %>%
+  ggplot(aes(x = sec_played)) +
+  geom_density(fill = pal_538["Medium Gray"], alpha = 0.7) +
+  geom_vline(
+    xintercept = min_song_length,
+    color = pal_538["Dark Gray"],
+    lty = 2
+  ) +
+  geom_vline(
+    aes(xintercept = length, color = song),
+    data = notable_lengths
+  ) +
+  geom_label(
+    aes(label = song, x = x, y = y, color = song),
+    data = notable_lengths,
+    hjust = c(1, 0, 0),
+    nudge_x = c(-10, 10, 10),
+    alpha = 0.7,
+    label.size = 0,
+    family = "sans",
+    fontface = "bold"
+  ) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.02))) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0)),
+    limits = c(0, 0.012)
+  ) +
+  scale_color_fivethirtyeight() +
+  theme(
+    axis.title = element_text()
+  ) +
+  labs(
+    x = "length listened to the song",
+    y = "density",
+    title = "The distribution of listening durations"
+  )
 ```
 
 ```{r}
-plot_barcount <- function(df, x, y, x_lbl, title, nudge_text = 11, expand_x = 0.08) {
+streaming_history %<>% filter(sec_played >= min_song_length)
+```
+
+
+```{r}
+streaming_history %.%
+  {
+    mutate(date = lubridate::floor_date(end_time, "day"))
+    count(date)
+  } %>%
+  ggplot(aes(x = date, y = n)) +
+  geom_point(alpha = 0.8) +
+  geom_smooth(method = "loess", formula = "y~x", color = pal_538["Blue"]) +
+  theme(
+    axis.title.y = element_text()
+  ) +
+  labs(
+    y = "number of songs",
+    title = "Daily number of songs listened to"
+  )
+```
+
+
+```{r}
+plot_barcount <- function(df, x, y, x_lbl, title, nudge_text = 11, expand_x = 0.08, wrap_y = Inf) {
   df %.%
     {
       mutate(label = scales::comma({{ x }}, accuracy = 1))
@@ -43,6 +127,7 @@ plot_barcount <- function(df, x, y, x_lbl, title, nudge_text = 11, expand_x = 0.
       nudge_x = nudge_text
     ) +
     scale_x_continuous(expand = expansion(c(0, expand_x))) +
+    scale_y_discrete(labels = scales::label_wrap(wrap_y)) +
     theme_fivethirtyeight() +
     theme(
       panel.grid.major.y = element_blank(),
@@ -65,7 +150,8 @@ streaming_history %.%
     x = n,
     y = artist_name,
     x_lbl = "number of times listened",
-    title = "Top-10 most listened to artists"
+    title = "Top-10 most listened to artists",
+    wrap_y = 30
   )
 ```
 
@@ -82,11 +168,12 @@ streaming_history %.%
     x_lbl = "number of times listened",
     title = "Top-10 most listened to songs",
     nudge_text = 2,
-    expand_x = 0.06
+    expand_x = 0.06,
+    wrap_y = 30
   )
 ```
 
-```{r}
+```{r, fig.height=5}
 ignore_top_artists <- c(
   "Background Noise From TraxLab", "Ambient Sounds from I'm In Records"
 )
@@ -115,7 +202,8 @@ streaming_history %.%
     x_lbl = "number of times listened",
     title = "Top songs of my favorite artists",
     nudge_text = 3,
-    expand_x = 0.20
+    expand_x = 0.20,
+    wrap_y = 30
   ) +
   facet_wrap(~artist_name, ncol = 2, scales = "free") +
   theme(strip.text = element_text(face = "bold"))
@@ -145,11 +233,67 @@ streaming_history %.%
     guide = guide_legend(nrow = 2, title = NULL)
   ) +
   labs(
-    title = "The frequency of my most-listened-to songs"
+    title = "The frequency of my top songs",
+    subtitle = "The number of times each song was played per month."
   )
 
 # TODO: Add general trend-line number of songs listened to over the months.
 ```
+
+```{r, fig.height=10, fig.width=8}
+pal <- c(excel_new_pal("Atlas")(6), "other" = pal_538[["Medium Gray"]])
+
+streaming_history %.%
+  {
+    mutate(
+      artist_name = fct_other(artist_name, keep = top_artists, other_level = "other"),
+      date = lubridate::floor_date(end_time, "week")
+    )
+    count(artist_name, date, name = "n")
+  } %>%
+  ggplot(aes(x = date, y = n, color = artist_name)) +
+  facet_wrap(artist_name ~ ., scales = "free_y", ncol = 1) +
+  geom_col(aes(color = artist_name, fill = artist_name), position = "dodge", alpha = 0.5) +
+  # geom_point(size = 0.2, alpha = 0.4) +
+  geom_smooth(alpha = 0.7, se = FALSE, span = 0.5) +
+  scale_color_manual(values = pal) +
+  scale_fill_manual(values = pal) +
+  theme(
+    strip.text = element_text(face = "bold"),
+    legend.position = "none"
+  ) +
+  labs(
+    title = "Trends in listening to my favorite artists"
+  )
+```
+
+```{r}
+pal <- c(excel_new_pal("Office Theme")(6), "other" = pal_538[["Medium Gray"]])
+
+streaming_history %.%
+  {
+    filter(artist_name == "Quinn XCII")
+    mutate(
+      track_name = fct_lump_n(track_name, n = length(pal) - 1, other_level = "other"),
+      date = lubridate::floor_date(end_time, "month"),
+    )
+    count(date, track_name)
+  } %>%
+  ggplot(aes(x = date, y = n, color = track_name, fill = track_name)) +
+  geom_col(position = "stack") +
+  scale_color_manual(values = pal) +
+  scale_fill_manual(values = pal) +
+  theme(
+    legend.position = "top"
+  ) +
+  labs(
+    y = "times listened",
+    color = NULL,
+    fill = NULL,
+    title = "Trend of favorite songs by Quinn XCII"
+  )
+```
+
 
 interesting ideas:
 
