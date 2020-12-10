@@ -1993,6 +1993,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
   <!--/radix_placeholder_distill-->
   <script src="site_libs/header-attrs-2.5/header-attrs.js"></script>
+  <script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+  <link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
   <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
   <script src="site_libs/anchor-4.2.2/anchor.min.js"></script>
   <script src="site_libs/bowser-1.9.3/bowser.min.js"></script>
@@ -2030,6 +2032,7 @@ Data Preparation
 </button>
 <div class="nav-dropdown-content">
 <a href="05_002_spotify-raw-data-preparation.html">Preparing the downloaded files</a>
+<a href="05_004_collecting-additional-data.html">Collecting additional data from Spotify's API</a>
 </div>
 </div>
 <div class="nav-dropdown">
@@ -2075,6 +2078,133 @@ Analysis
 </div>
 
 <div class="d-article">
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<p>Get all of my playlists.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre><code><span class='va'>my_playlists</span> <span class='op'>&lt;-</span> <span class='fu'>get_my_playlists_memo</span><span class='op'>(</span>limit <span class='op'>=</span> <span class='fl'>50</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'>as_tibble</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'>janitor</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/janitor/man/clean_names.html'>clean_names</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'>select</span><span class='op'>(</span><span class='va'>name</span>, <span class='va'>id</span>, <span class='va'>uri</span>, <span class='va'>tracks_total</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+name
+</th>
+<th style="text-align:left;">
+id
+</th>
+<th style="text-align:left;">
+uri
+</th>
+<th style="text-align:right;">
+tracks_total
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Coffee Shop Sounds
+</td>
+<td style="text-align:left;">
+3SoFTOMn9GQem4yXRiMsP3
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:3SoFTOMn9GQem4yXRiMsP3" class="uri">spotify:playlist:3SoFTOMn9GQem4yXRiMsP3</a>
+</td>
+<td style="text-align:right;">
+71
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+do not go gently
+</td>
+<td style="text-align:left;">
+4LZeYGsNyZ3pzIIhLkcSHb
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:4LZeYGsNyZ3pzIIhLkcSHb" class="uri">spotify:playlist:4LZeYGsNyZ3pzIIhLkcSHb</a>
+</td>
+<td style="text-align:right;">
+157
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Deep Focus
+</td>
+<td style="text-align:left;">
+37i9dQZF1DWZeKCadgRdKQ
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:37i9dQZF1DWZeKCadgRdKQ" class="uri">spotify:playlist:37i9dQZF1DWZeKCadgRdKQ</a>
+</td>
+<td style="text-align:right;">
+188
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Coding
+</td>
+<td style="text-align:left;">
+08nu8IFkbbXkiaYkofMVwv
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:08nu8IFkbbXkiaYkofMVwv" class="uri">spotify:playlist:08nu8IFkbbXkiaYkofMVwv</a>
+</td>
+<td style="text-align:right;">
+175
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Good Bakcground
+</td>
+<td style="text-align:left;">
+5uzutKLSRFtPqFaxjjRO56
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:5uzutKLSRFtPqFaxjjRO56" class="uri">spotify:playlist:5uzutKLSRFtPqFaxjjRO56</a>
+</td>
+<td style="text-align:right;">
+3
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>For each playlist, get all of the information.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre><code><span class='va'>get_playlist_info</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>playlist_id</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='fu'>get_playlist_memo</span><span class='op'>(</span>playlist_id <span class='op'>=</span> <span class='va'>playlist_id</span><span class='op'>)</span><span class='op'>$</span><span class='va'>tracks</span><span class='op'>$</span><span class='va'>items</span> <span class='op'>%&gt;%</span>
+    <span class='fu'>as_tibble</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+    <span class='fu'>janitor</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/janitor/man/clean_names.html'>clean_names</a></span><span class='op'>(</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+    <span class='fu'>select</span><span class='op'>(</span>
+      <span class='va'>track_name</span>, <span class='va'>track_id</span>, <span class='va'>track_uri</span>, <span class='va'>track_artists</span>, <span class='va'>track_duration_ms</span>,
+      <span class='va'>track_popularity</span>, <span class='va'>track_album_name</span>, <span class='va'>track_album_id</span>, <span class='va'>track_album_uri</span>,
+      <span class='va'>track_album_release_date</span>, <span class='va'>track_album_release_date_precision</span>,
+      <span class='va'>track_explicit</span>
+    <span class='op'>)</span>
+<span class='op'>}</span>
+
+<span class='va'>playlist_df</span> <span class='op'>&lt;-</span> <span class='va'>my_playlists</span> <span class='op'>%&gt;%</span>
+  <span class='fu'>mutate</span><span class='op'>(</span>data <span class='op'>=</span> <span class='fu'>map</span><span class='op'>(</span><span class='va'>id</span>, <span class='va'>get_playlist_info</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<p>For each track, get the “features” and “analysis” from Spotify.</p>
+<p>(TODO)</p>
 <div class="layout-chunk" data-layout="l-body">
 
 </div>

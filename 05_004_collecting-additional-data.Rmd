@@ -16,8 +16,61 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, comment = "#>")
 
+library(memoise)
 library(tidyverse)
+
+cache_path <- here::here(".memoise")
+
+walk(list.files("lib", pattern = "R$", full.names = TRUE), source)
 ```
+
+```{r}
+get_playlist_memo <- memoise(
+  spotifyr::get_playlist,
+  cache = cache_filesystem(cache_path)
+)
+
+get_my_playlists_memo <- memoise(
+  spotifyr::get_my_playlists,
+  cache = cache_filesystem(cache_path)
+)
+```
+
+Get all of my playlists.
+
+```{r, echo=TRUE}
+my_playlists <- get_my_playlists_memo(limit = 50) %>%
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  select(name, id, uri, tracks_total)
+```
+
+```{r}
+display_head(my_playlists)
+```
+
+For each playlist, get all of the information.
+
+```{r, echo=TRUE}
+get_playlist_info <- function(playlist_id) {
+  get_playlist_memo(playlist_id = playlist_id)$tracks$items %>%
+    as_tibble() %>%
+    janitor::clean_names() %>%
+    select(
+      track_name, track_id, track_uri, track_artists, track_duration_ms,
+      track_popularity, track_album_name, track_album_id, track_album_uri,
+      track_album_release_date, track_album_release_date_precision,
+      track_explicit
+    )
+}
+
+playlist_df <- my_playlists %>%
+  mutate(data = map(id, get_playlist_info))
+```
+
+For each track, get the "features" and "analysis" from Spotify.
+
+(TODO)
 
 ```{r}
 stupid_deep_id <- "23LIOXAz6QSzgPYH4dmZL7"

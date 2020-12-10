@@ -15,6 +15,8 @@ navbar:
       menu:
         - text: "Preparing the downloaded files"
           href: 05_002_spotify-raw-data-preparation.html
+        - text: "Collecting additional data from Spotify's API"
+          href: 05_004_collecting-additional-data.html
     - text: "Analysis"
       menu:
         - text: "Analyzing my streaming history"
