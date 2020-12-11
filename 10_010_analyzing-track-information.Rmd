@@ -1,0 +1,70 @@
+---
+title: "Analyzing my track details"
+description: |
+  A deep analysis of some of my favorite songs.
+author:
+  - first_name: "Joshua"
+    last_name: "Cook"
+    url: https://joshuacook.netlify.app
+    orcid_id: 0000-0001-9815-6879
+date: "`r Sys.Date()`"
+output:
+  distill::distill_article:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment = "#>")
+
+library(nakedpipe)
+library(magrittr)
+library(ggthemes)
+library(ggrepel)
+library(tidyverse)
+
+theme_set(ggthemes::theme_fivethirtyeight())
+pal_538 <- deframe(ggthemes_data[["fivethirtyeight"]])
+
+walk(list.files("lib", pattern = "R$", full.names = TRUE), source)
+```
+
+```{r}
+stacy_analysis <- readRDS(here::here("temp", "track_analysis"))
+```
+
+```{r}
+stacy_sections <- as_tibble(stacy_analysis$sections)
+display_head(stacy_sections)
+```
+
+```{r}
+bind_rows(
+  stacy_analysis$bars %>% add_column(type = "bars"),
+  stacy_analysis$beats %>% add_column(type = "beats"),
+  stacy_analysis$tatums %>% add_column(type = "tatus")
+) %.%
+  {
+    as_tibble()
+  } %>%
+  ggplot(aes(x = start, y = confidence, color = type)) +
+  facet_wrap(~type, ncol = 1) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "loess", formula = "y~x", span = 0.5, se = FALSE) +
+  scale_color_fivethirtyeight() +
+  theme(
+    legend.position = "none"
+  ) +
+  labs(
+    x = "time (ms)",
+    y = "confidence",
+    title = "Confidence in declaration of song timing features"
+  )
+```
+
+```{r}
+stacy_analysis$segments %.% {
+  as_tibble()
+  mutate(idx = row_number())
+  unnest(c(pitches, timbre))
+}
+```

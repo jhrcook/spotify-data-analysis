@@ -14,7 +14,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, comment = "#>")
+knitr::opts_chunk$set(echo = FALSE, comment = "#>", eval = FALSE)
 
 library(memoise)
 library(tidyverse)
@@ -24,6 +24,9 @@ cache_path <- here::here(".memoise")
 walk(list.files("lib", pattern = "R$", full.names = TRUE), source)
 ```
 
+**This notebook is still a work-in-progress.**
+Currently, none of the code is run, so the notebook will appear blank.
+
 ```{r}
 get_playlist_memo <- memoise(
   spotifyr::get_playlist,
@@ -32,6 +35,21 @@ get_playlist_memo <- memoise(
 
 get_my_playlists_memo <- memoise(
   spotifyr::get_my_playlists,
+  cache = cache_filesystem(cache_path)
+)
+
+get_track_memo <- memoise(
+  spotifyr::get_track,
+  cache = cache_filesystem(cache_path)
+)
+
+get_track_audio_features_memo <- memoise(
+  spotifyr::get_track_audio_features,
+  cache = cache_filesystem(cache_path)
+)
+
+get_track_audio_analysis_memo <- memoise(
+  spotifyr::get_track_audio_analysis,
   cache = cache_filesystem(cache_path)
 )
 ```
@@ -70,11 +88,47 @@ playlist_df <- my_playlists %>%
 
 For each track, get the "features" and "analysis" from Spotify.
 
-(TODO)
+```{r}
+clean_track_info <- function(x) {
+  tibble(
+    album_id = x$album$id,
+    album_name = x$album$name,
+    duration = x$duration_ms,
+    explicit = x$explicit,
+    track_id = x$id,
+    track_uri = x$uri,
+    track_name = x$name,
+    popularity = x$popularity,
+    album_info = list(x$album),
+    release_date = x$album$release_date,
+    release_date_precision = x$album$release_date_precision
+  )
+}
+
+clean_track_features <- function(x) {
+  janitor::clean_names(x)
+}
+
+clean_track_analysis <- function(x) {
+  x[-c(1:2)] %>%
+    map(list) %>%
+    as_tibble()
+}
+
+
+get_track_data <- function(id) {
+  bind_cols(
+    get_track_memo(id = id) %>% clean_track_info(),
+    get_track_audio_features_memo(id = id) %>% clean_track_features(),
+    get_track_audio_analysis_memo(id = id) %>% clean_track_analysis()
+  )
+}
+
+get_track_data <- memoise(get_track_data, cache = cache_filesystem(cache_path))
+```
+
 
 ```{r}
-stupid_deep_id <- "23LIOXAz6QSzgPYH4dmZL7"
-track_info <- spotifyr::get_track(stupid_deep_id)
-track_features <- spotifyr::get_track_audio_features(stupid_deep_id)
-track_analysis <- spotifyr::get_track_audio_analysis(stupid_deep_id)
+stacy_id <- "07ZQLYn9x4x3L3vxStc1zr"
+stacy_track_data <- get_track_data(stacy_id)
 ```

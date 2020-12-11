@@ -80,3 +80,4 @@ vignettes/*.pdf
 
 _raw-data/
 .memoise/
+temp/
