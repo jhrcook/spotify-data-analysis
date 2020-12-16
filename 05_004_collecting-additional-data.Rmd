@@ -19,13 +19,16 @@ knitr::opts_chunk$set(echo = FALSE, comment = "#>", eval = FALSE)
 library(memoise)
 library(tidyverse)
 
+# To shut-up `summarise()`.
+options(dplyr.summarise.inform = FALSE)
+
 cache_path <- here::here(".memoise")
 
 walk(list.files("lib", pattern = "R$", full.names = TRUE), source)
 ```
 
-**This notebook is still a work-in-progress.**
-Currently, none of the code is run, so the notebook will appear blank.
+> **This notebook is still a work-in-progress.**
+> Currently, none of the code is run, so the notebook will appear blank.
 
 ```{r}
 get_playlist_memo <- memoise(

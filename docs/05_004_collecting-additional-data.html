@@ -91,8 +91,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
 
   <!--  https://schema.org/Article -->
-  <meta property="article:published" itemprop="datePublished" content="2020-12-09"/>
-  <meta property="article:created" itemprop="dateCreated" content="2020-12-09"/>
+  <meta property="article:published" itemprop="datePublished" content="2020-12-15"/>
+  <meta property="article:created" itemprop="dateCreated" content="2020-12-15"/>
   <meta name="article:author" content="Joshua Cook"/>
 
   <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
@@ -111,7 +111,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Collecting song and artist data"]},{"type":"character","attributes":{},"value":["Annotating the data downloaded from Spotify with more specific and descriptive data using Spotify's API.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["first_name","last_name","url","orcid_id"]}},"value":[{"type":"character","attributes":{},"value":["Joshua"]},{"type":"character","attributes":{},"value":["Cook"]},{"type":"character","attributes":{},"value":["https://joshuacook.netlify.app"]},{"type":"character","attributes":{},"value":["0000-0001-9815-6879"]}]}]},{"type":"character","attributes":{},"value":["2020-12-09"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc"]}},"value":[{"type":"logical","attributes":{},"value":[true]}]}]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Collecting song and artist data"]},{"type":"character","attributes":{},"value":["Annotating the data downloaded from Spotify with more specific and descriptive data using Spotify's API.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["first_name","last_name","url","orcid_id"]}},"value":[{"type":"character","attributes":{},"value":["Joshua"]},{"type":"character","attributes":{},"value":["Cook"]},{"type":"character","attributes":{},"value":["https://joshuacook.netlify.app"]},{"type":"character","attributes":{},"value":["0000-0001-9815-6879"]}]}]},{"type":"character","attributes":{},"value":["2020-12-15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc"]}},"value":[{"type":"logical","attributes":{},"value":[true]}]}]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   <!--radix_placeholder_navigation_in_header-->
@@ -1993,8 +1993,6 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
   <!--/radix_placeholder_distill-->
   <script src="site_libs/header-attrs-2.5/header-attrs.js"></script>
-  <script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
-  <link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
   <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
   <script src="site_libs/anchor-4.2.2/anchor.min.js"></script>
   <script src="site_libs/bowser-1.9.3/bowser.min.js"></script>
@@ -2011,7 +2009,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"Collecting song and artist data","description":"Annotating the data downloaded from Spotify with more specific and descriptive data using Spotify's API.","authors":[{"author":"Joshua Cook","authorURL":"https://joshuacook.netlify.app","affiliation":"&nbsp;","affiliationURL":"#","orcidID":"0000-0001-9815-6879"}],"publishedDate":"2020-12-09T00:00:00.000+00:00","citationText":"Cook, 2020"}
+{"title":"Collecting song and artist data","description":"Annotating the data downloaded from Spotify with more specific and descriptive data using Spotify's API.","authors":[{"author":"Joshua Cook","authorURL":"https://joshuacook.netlify.app","affiliation":"&nbsp;","affiliationURL":"#","orcidID":"0000-0001-9815-6879"}],"publishedDate":"2020-12-15T00:00:00.000+00:00","citationText":"Cook, 2020"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -2043,6 +2041,8 @@ Analysis
 </button>
 <div class="nav-dropdown-content">
 <a href="10_005_analyzing-my-streaming-history.html">Analyzing my streaming history</a>
+<a href="10_010_analyzing-track-information.html">Trends in song characteristics</a>
+<a href="10_015_analyzing-inferences.html">Spotify's inferences</a>
 </div>
 </div>
 <a href="about.html">About</a>
@@ -2074,10 +2074,13 @@ Analysis
 
   true
 
-<br/>2020-12-09
+<br/>2020-12-15
 </div>
 
 <div class="d-article">
+<blockquote>
+<p><strong>This notebook is still a work-in-progress.</strong> Currently, none of the code is run, so the notebook will appear blank.</p>
+</blockquote>
 <div class="layout-chunk" data-layout="l-body">
 
 </div>
@@ -2092,96 +2095,7 @@ Analysis
 </div>
 </div>
 <div class="layout-chunk" data-layout="l-body">
-<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
-<thead>
-<tr>
-<th style="text-align:left;">
-name
-</th>
-<th style="text-align:left;">
-id
-</th>
-<th style="text-align:left;">
-uri
-</th>
-<th style="text-align:right;">
-tracks_total
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-Coffee Shop Sounds
-</td>
-<td style="text-align:left;">
-3SoFTOMn9GQem4yXRiMsP3
-</td>
-<td style="text-align:left;">
-<a href="spotify:playlist:3SoFTOMn9GQem4yXRiMsP3" class="uri">spotify:playlist:3SoFTOMn9GQem4yXRiMsP3</a>
-</td>
-<td style="text-align:right;">
-71
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-do not go gently
-</td>
-<td style="text-align:left;">
-4LZeYGsNyZ3pzIIhLkcSHb
-</td>
-<td style="text-align:left;">
-<a href="spotify:playlist:4LZeYGsNyZ3pzIIhLkcSHb" class="uri">spotify:playlist:4LZeYGsNyZ3pzIIhLkcSHb</a>
-</td>
-<td style="text-align:right;">
-157
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Deep Focus
-</td>
-<td style="text-align:left;">
-37i9dQZF1DWZeKCadgRdKQ
-</td>
-<td style="text-align:left;">
-<a href="spotify:playlist:37i9dQZF1DWZeKCadgRdKQ" class="uri">spotify:playlist:37i9dQZF1DWZeKCadgRdKQ</a>
-</td>
-<td style="text-align:right;">
-188
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Coding
-</td>
-<td style="text-align:left;">
-08nu8IFkbbXkiaYkofMVwv
-</td>
-<td style="text-align:left;">
-<a href="spotify:playlist:08nu8IFkbbXkiaYkofMVwv" class="uri">spotify:playlist:08nu8IFkbbXkiaYkofMVwv</a>
-</td>
-<td style="text-align:right;">
-175
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Good Bakcground
-</td>
-<td style="text-align:left;">
-5uzutKLSRFtPqFaxjjRO56
-</td>
-<td style="text-align:left;">
-<a href="spotify:playlist:5uzutKLSRFtPqFaxjjRO56" class="uri">spotify:playlist:5uzutKLSRFtPqFaxjjRO56</a>
-</td>
-<td style="text-align:right;">
-3
-</td>
-</tr>
-</tbody>
-</table>
+
 </div>
 <p>For each playlist, get all of the information.</p>
 <div class="layout-chunk" data-layout="l-body">
@@ -2204,7 +2118,9 @@ Good Bakcground
 </div>
 </div>
 <p>For each track, get the “features” and “analysis” from Spotify.</p>
-<p>(TODO)</p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
 <div class="layout-chunk" data-layout="l-body">
 
 </div>

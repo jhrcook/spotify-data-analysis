@@ -1,0 +1,201 @@
+---
+title: "What does Spotofy think of me?"
+description: |
+  A dive into the "inferences" that Spotify has made about me (and is probably telling advertisers).
+author:
+  - first_name: "Joshua"
+    last_name: "Cook"
+    url: https://joshuacook.netlify.app
+    orcid_id: 0000-0001-9815-6879
+date: "`r Sys.Date()`"
+output:
+  distill::distill_article:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(mustashe)
+library(nakedpipe)
+library(jhcutils)
+library(ggthemes)
+library(ggtext)
+library(tidygraph)
+library(ggraph)
+library(tidyverse)
+
+# To shut-up `summarise()`.
+options(dplyr.summarise.inform = FALSE)
+
+spotify_inferences <- readRDS(here::here("data", "inferences.rds"))
+
+theme_set(ggthemes::theme_fivethirtyeight())
+pal_538 <- deframe(ggthemes_data[["fivethirtyeight"]])
+
+walk(list.files("lib", pattern = "R$", full.names = TRUE), source)
+```
+
+As mentioned during my intial [data cleaning](), here is the description that Spotify's provides about this list of "inferences" it has made about me:
+
+> We draw certain inferences about your interests and preferences based on your usage of the Spotify service and using data obtained from our advertisers and other advertising partners.
+> This includes a list of market segments with which you are currently associated.
+> Depending on your settings, this data may be used to serve interest-based advertising to you within the Spotify service.
+
+Only when looking through my settings on the Spotify website to download the data they have collected about me did I realize that **I had linked my Facebook account** `r emo::ji("person_facepalming_light_skin_tone")`.
+
+Spotify reports making `r nrow(spotify_inferences)` inferences about me.
+
+```{r}
+head(spotify_inferences)
+```
+
+
+Most of the bottom 25 are labeled `TEST`.
+I do not know what this means, but will need to take the variance into account as I try to extract the key words and phrases.
+
+```{r}
+tail(spotify_inferences, 25)
+```
+
+
+```{r}
+spotify_inferences %.%
+  {
+    mutate(
+      p = str_extract(inference, "^.P|p"),
+      p = str_to_upper(p)
+    )
+    count(p)
+  } %>%
+  ggplot(aes(x = p, y = n)) +
+  geom_col() +
+  scale_y_continuous(expand = expansion(c(0, 0.02)))
+```
+
+Spotify believes I am both a registered Republican and registered Democrat and hold strong right and left political views.
+
+```{r}
+political_regex <- regex("politic|democr|repub|CNN|NBC|Fox|vote", ignore_case = TRUE)
+
+spotify_inferences %.% {
+  filter(str_detect(inference, political_regex))
+  filter(!str_detect(inference, "Banana"))
+  pull(inference)
+  unlist()
+}
+```
+
+```{r}
+spotify_inferences %.% {
+  filter(str_detect(str_to_lower(inference), "manga"))
+}
+```
+
+```{r}
+spotify_inferences %.% {
+  filter(str_detect(str_to_lower(inference), "kids|children|parent"))
+}
+```
+Clean inferences.
+
+```{r}
+clean_inferences <- function(s) {
+  to_remove <- c(
+    "US_DEPRECATED$",
+    "_[:upper:]{2} [Do Not Use in 2021]",
+    regex("^custom_", ignore_case = TRUE),
+    "^.*[:digit:][Pp]_",
+    "_[:upper:]{2}$",
+    "_[:digit:]{1,2}[:alpha:]+[:digit:]{2,4}$"
+  )
+
+  for (r in to_remove) {
+    s <- str_remove(s, r)
+  }
+
+  for (i in 1:10) {
+    s <- str_remove(s, "[_-][:digit:]+$") %>%
+      str_remove("[_-][:digit:]+k$")
+  }
+
+  return(s)
+}
+
+clean_inferences <- spotify_inferences %.% {
+  mutate(
+    inference_clean = clean_inferences(inference)
+  )
+  u_pull(inference_clean)
+}
+```
+
+```{r, warning=FALSE, message=FALSE}
+split_term <- function(x) {
+  unlist(str_split(x, "-+|_+"))
+}
+
+# unstash("inference_similarity_edge_list")
+
+stash("inference_similarity_edge_list", depends_on = c("clean_inferences"), {
+  inference_similarity_edge_list <- expand_grid(
+    from = clean_inferences,
+    to = clean_inferences
+  ) %>%
+    mutate(similarity = map2_dbl(from, to, function(x, y) {
+      length(base::intersect(split_term(x), split_term(y)))
+    }))
+})
+
+inference_graph <- inference_similarity_edge_list %>%
+  filter(from != to) %>%
+  filter(similarity != 0) %>%
+  as_tbl_graph(directed = FALSE)
+```
+
+```{r}
+inference_graph %E>%
+  filter(similarity > 1) %N>%
+  filter(centrality_degree(mode = "all") > 1) %>%
+  ggraph(layout = "nicely") +
+  geom_edge_link(width = 0.5, alpha = 0.2) +
+  geom_node_point(size = 0.6) +
+  theme_graph()
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+plot_graph_js <- function(gr) {
+  threejs::graphjs(
+    gr,
+    vertex.label = igraph::V(gr)$name,
+    vertex.size = 1,
+    vertex.color = pal_538[["Blue"]],
+    edge.color = pal_538[["Dark Gray"]],
+    edge.width = scales::rescale(igraph::E(gr)$similarity, to = c(3, 10)),
+    edge.alpha = 0.3,
+    layout = igraph::layout_with_drl(gr, dim = 3)
+  )
+}
+
+inference_graph %E>%
+  filter(similarity > 1) %N>%
+  filter_component_size(min_size = 3, max_size = 7) %>%
+  plot_graph_js()
+```
+
+```{r, warning=FALSE, message=FALSE}
+inference_graph %E>%
+  filter(similarity > 1) %N>%
+  get_giant_component() %>%
+  plot_graph_js()
+```
+
+
+Analyses:
+
+- word cloud
+- sentiment analysis?
+- make graph with edge weight as word similarities
+  - distribution of size of components
+  - use centrality metrics to identify most important

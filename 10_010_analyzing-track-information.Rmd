@@ -20,7 +20,11 @@ library(nakedpipe)
 library(magrittr)
 library(ggthemes)
 library(ggrepel)
+library(ggtext)
 library(tidyverse)
+
+# To shut-up `summarise()`.
+options(dplyr.summarise.inform = FALSE)
 
 theme_set(ggthemes::theme_fivethirtyeight())
 pal_538 <- deframe(ggthemes_data[["fivethirtyeight"]])
@@ -41,15 +45,40 @@ display_head(stacy_sections)
 bind_rows(
   stacy_analysis$bars %>% add_column(type = "bars"),
   stacy_analysis$beats %>% add_column(type = "beats"),
-  stacy_analysis$tatums %>% add_column(type = "tatus")
+  stacy_analysis$tatums %>% add_column(type = "tatums")
+) %.%
+  {
+    as_tibble()
+  } %>%
+  ggplot(aes(x = start, y = duration, color = type)) +
+  facet_wrap(~type, scales = "free_y", ncol = 1) +
+  geom_point(alpha = 0.5) +
+  scale_color_fivethirtyeight() +
+  theme(
+    plot.title = element_markdown(),
+    legend.position = "none"
+  ) +
+  labs(
+    x = "time (ms)",
+    y = "confidence",
+    title = "Duration of timing features throughout *Stacy*"
+  )
+```
+
+```{r}
+bind_rows(
+  stacy_analysis$bars %>% add_column(type = "bars"),
+  stacy_analysis$beats %>% add_column(type = "beats"),
+  stacy_analysis$tatums %>% add_column(type = "tatums")
 ) %.%
   {
     as_tibble()
   } %>%
   ggplot(aes(x = start, y = confidence, color = type)) +
   facet_wrap(~type, ncol = 1) +
+  geom_hline(yintercept = 0.5, color = pal_538["Dark Gray"], size = 1, alpha = 0.7) +
   geom_point(alpha = 0.5) +
-  geom_smooth(method = "loess", formula = "y~x", span = 0.5, se = FALSE) +
+  geom_smooth(method = "loess", formula = "y~x", span = 0.2, se = FALSE) +
   scale_color_fivethirtyeight() +
   theme(
     legend.position = "none"
@@ -62,9 +91,53 @@ bind_rows(
 ```
 
 ```{r}
-stacy_analysis$segments %.% {
+stacy_segment_tidy <- stacy_analysis$segments %.% {
   as_tibble()
-  mutate(idx = row_number())
-  unnest(c(pitches, timbre))
+  mutate(
+    idx = row_number(),
+    loudness_max = map(loudness_max, ~ c(.))
+  )
+  select(idx, start, loudness_max, pitches, timbre)
+  pivot_longer(-c(idx, start))
+  unnest(value)
 }
+
+stacy_segment_tidy %>%
+  ggplot(aes(x = start, y = value, color = name)) +
+  facet_wrap(~name, scales = "free_y", ncol = 1) +
+  geom_point(size = 0.5, alpha = 0.3) +
+  scale_color_fivethirtyeight(guide = FALSE) +
+  theme(
+    plot.title = element_markdown(),
+    axis.title.x = element_text()
+  ) +
+  labs(
+    title = "Segment analysis of *Stacy*",
+    x = "time point"
+  )
+```
+
+```{r}
+stacy_segment_tidy %.%
+  {
+    filter(name == "pitches")
+    group_by(idx, start)
+    summarise(avg_pitch = mean(value))
+    ungroup()
+  } %>%
+  ggplot(aes(x = start, y = avg_pitch)) +
+  geom_point(size = 1, alpha = 0.9, color = pal_538["Blue"]) +
+  geom_smooth(method = "loess", formula = "y~x", span = 0.5, color = colorspace::darken(pal_538["Blue"], 0.3)) +
+  theme(
+    plot.title = element_markdown()
+  ) +
+  labs(
+    title = "Average pitch of *Stacy*"
+  )
+```
+
+```{r}
+tibble(pitches = unlist(stacy_analysis$segments$pitches)) %>%
+  ggplot(aes(x = pitches)) +
+  geom_histogram(binwidth = 0.05)
 ```
