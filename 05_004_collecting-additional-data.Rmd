@@ -14,21 +14,34 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, comment = "#>", eval = FALSE)
+knitr::opts_chunk$set(echo = FALSE, comment = "#>")
 
 library(memoise)
+library(mustashe)
+library(jhcutils)
+library(magrittr)
 library(tidyverse)
 
 # To shut-up `summarise()`.
 options(dplyr.summarise.inform = FALSE)
 
 cache_path <- here::here(".memoise")
+mustashe::use_here(silent = TRUE)
 
 walk(list.files("lib", pattern = "R$", full.names = TRUE), source)
 ```
 
-> **This notebook is still a work-in-progress.**
-> Currently, none of the code is run, so the notebook will appear blank.
+Spotify actually has another API for collecting additional details about playlists, albums, artists, and tracks.
+(It also contains endpoints for a user to control their own playlists and song playback, but those are not relevant for this project.)
+Below, I collect as much data as possible about songs I listen to using this API.
+
+## Accessing the API and caching
+
+To access the API, I used the ['spotifyr'](https://www.rcharlie.com/spotifyr/) R package.
+The instructions are setting up a developer account and aquiring access keys from Spotify are detailed in the documentation for 'spotifyr'.
+
+To make development and reproduction a bit faster, I wrapped all of the 'spotifyr' functions I used in `memoise::memoise()` from the ['memoise'](http://memoise.r-lib.org) package.
+I also cached the long-running data frame creation steps using the ['mustashe'](https://jhrcook.github.io/mustashe/) package.
 
 ```{r}
 get_playlist_memo <- memoise(
@@ -57,7 +70,17 @@ get_track_audio_analysis_memo <- memoise(
 )
 ```
 
-Get all of my playlists.
+## Data collection
+
+Track and artist information must be queried using their unique IDs assigned by Spotify.
+Annoyingly, the personal data I have already downloaded does *not* contain these IDs with the tracks.
+Therefore, I instead used the API to collect all of my playlist information, extracted the songs (and their IDs) from the playlists, and used those to query.
+Because of this limitation, I was not able to access the detailed information from every song in my streaming history, but this will get most of them and all of my most popular tracks.
+
+### List of my playlists
+
+In the following code, I collected the names and IDs of all of my playlists.
+A sample of the resultant data frame is presented.
 
 ```{r, echo=TRUE}
 my_playlists <- get_my_playlists_memo(limit = 50) %>%
@@ -70,9 +93,12 @@ my_playlists <- get_my_playlists_memo(limit = 50) %>%
 display_head(my_playlists)
 ```
 
-For each playlist, get all of the information.
+### Playlist information
 
-```{r, echo=TRUE}
+The playlist IDs were then used to get all of the information about the playlists.
+The `data` column of the `playlist_df` data frame contains a data frame for each playlist with the track and album information.
+
+```{r, echo=TRUE, message=FALSE}
 get_playlist_info <- function(playlist_id) {
   get_playlist_memo(playlist_id = playlist_id)$tracks$items %>%
     as_tibble() %>%
@@ -85,22 +111,32 @@ get_playlist_info <- function(playlist_id) {
     )
 }
 
-playlist_df <- my_playlists %>%
-  mutate(data = map(id, get_playlist_info))
+stash("playlist_df", depends_on = c("my_playlists"), {
+  playlist_df <- my_playlists %>%
+    mutate(data = map(id, get_playlist_info))
+})
 ```
 
-For each track, get the "features" and "analysis" from Spotify.
-
 ```{r}
+rmarkdown::paged_table(head(playlist_df))
+```
+
+### Track information
+
+Then, I gathered the track names and IDs from each playlist and queried the API to obtain as much information from Spotify as possible.
+For each track, Spotify has what they call ["features"](https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/) and ["analysis"](https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-analysis/) (links are to the API documentation).
+The "features" data tend to be quantitative characteristics of the track such as *danceability*, *acousticness*, and *liveness*.
+The "analysis" data are various time decompositions of the songs at different scales such as into their beats, segments, etc.
+
+The following code shows the functions that collect and clean the data returned by the API calls.
+
+```{r, echo=TRUE}
 clean_track_info <- function(x) {
   tibble(
     album_id = x$album$id,
     album_name = x$album$name,
     duration = x$duration_ms,
     explicit = x$explicit,
-    track_id = x$id,
-    track_uri = x$uri,
-    track_name = x$name,
     popularity = x$popularity,
     album_info = list(x$album),
     release_date = x$album$release_date,
@@ -109,7 +145,8 @@ clean_track_info <- function(x) {
 }
 
 clean_track_features <- function(x) {
-  janitor::clean_names(x)
+  janitor::clean_names(x) %>%
+    select(-id, -uri)
 }
 
 clean_track_analysis <- function(x) {
@@ -120,7 +157,7 @@ clean_track_analysis <- function(x) {
 
 
 get_track_data <- function(id) {
-  bind_cols(
+  x <- bind_cols(
     get_track_memo(id = id) %>% clean_track_info(),
     get_track_audio_features_memo(id = id) %>% clean_track_features(),
     get_track_audio_analysis_memo(id = id) %>% clean_track_analysis()
@@ -130,8 +167,31 @@ get_track_data <- function(id) {
 get_track_data <- memoise(get_track_data, cache = cache_filesystem(cache_path))
 ```
 
+Each track is run through `get_track_data()` to get and organize all of the data.
+The resulting data frame is cached for future analysis and some columns are displayed below as examples.
+
+```{r, warning=FALSE, message=FALSE}
+stash("track_info_df", depends_on = "playlist_df", {
+  track_info_df <- playlist_df %>%
+    select(data) %>%
+    unnest(data) %>%
+    select(track_name, track_id) %>%
+    distinct() %>%
+    mutate(track_data = map(track_id, get_track_data))
+})
+```
 
 ```{r}
-stacy_id <- "07ZQLYn9x4x3L3vxStc1zr"
-stacy_track_data <- get_track_data(stacy_id)
+save_f <- here::here("data", "track_detailed_info.rds")
+if (!file.exists(save_f)) {
+  track_info_df %>%
+    unnest(track_data) %>%
+    saveRDS(save_f)
+}
+
+set.seed(0)
+track_info_df %>%
+  unnest(track_data) %>%
+  sample_n(10) %>%
+  rmarkdown::paged_table()
 ```

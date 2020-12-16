@@ -91,8 +91,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
 
   <!--  https://schema.org/Article -->
-  <meta property="article:published" itemprop="datePublished" content="2020-12-15"/>
-  <meta property="article:created" itemprop="dateCreated" content="2020-12-15"/>
+  <meta property="article:published" itemprop="datePublished" content="2020-12-16"/>
+  <meta property="article:created" itemprop="dateCreated" content="2020-12-16"/>
   <meta name="article:author" content="Joshua Cook"/>
 
   <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
@@ -111,7 +111,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Collecting song and artist data"]},{"type":"character","attributes":{},"value":["Annotating the data downloaded from Spotify with more specific and descriptive data using Spotify's API.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["first_name","last_name","url","orcid_id"]}},"value":[{"type":"character","attributes":{},"value":["Joshua"]},{"type":"character","attributes":{},"value":["Cook"]},{"type":"character","attributes":{},"value":["https://joshuacook.netlify.app"]},{"type":"character","attributes":{},"value":["0000-0001-9815-6879"]}]}]},{"type":"character","attributes":{},"value":["2020-12-15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc"]}},"value":[{"type":"logical","attributes":{},"value":[true]}]}]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["Collecting song and artist data"]},{"type":"character","attributes":{},"value":["Annotating the data downloaded from Spotify with more specific and descriptive data using Spotify's API.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["first_name","last_name","url","orcid_id"]}},"value":[{"type":"character","attributes":{},"value":["Joshua"]},{"type":"character","attributes":{},"value":["Cook"]},{"type":"character","attributes":{},"value":["https://joshuacook.netlify.app"]},{"type":"character","attributes":{},"value":["0000-0001-9815-6879"]}]}]},{"type":"character","attributes":{},"value":["2020-12-16"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc"]}},"value":[{"type":"logical","attributes":{},"value":[true]}]}]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   <!--radix_placeholder_navigation_in_header-->
@@ -1993,6 +1993,10 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
   <!--/radix_placeholder_distill-->
   <script src="site_libs/header-attrs-2.5/header-attrs.js"></script>
+  <script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+  <link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+  <link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
+  <script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
   <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
   <script src="site_libs/anchor-4.2.2/anchor.min.js"></script>
   <script src="site_libs/bowser-1.9.3/bowser.min.js"></script>
@@ -2009,7 +2013,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"Collecting song and artist data","description":"Annotating the data downloaded from Spotify with more specific and descriptive data using Spotify's API.","authors":[{"author":"Joshua Cook","authorURL":"https://joshuacook.netlify.app","affiliation":"&nbsp;","affiliationURL":"#","orcidID":"0000-0001-9815-6879"}],"publishedDate":"2020-12-15T00:00:00.000+00:00","citationText":"Cook, 2020"}
+{"title":"Collecting song and artist data","description":"Annotating the data downloaded from Spotify with more specific and descriptive data using Spotify's API.","authors":[{"author":"Joshua Cook","authorURL":"https://joshuacook.netlify.app","affiliation":"&nbsp;","affiliationURL":"#","orcidID":"0000-0001-9815-6879"}],"publishedDate":"2020-12-16T00:00:00.000+00:00","citationText":"Cook, 2020"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -2074,17 +2078,35 @@ Analysis
 
   true
 
-<br/>2020-12-15
+<br/>2020-12-16
 </div>
 
 <div class="d-article">
-<blockquote>
-<p><strong>This notebook is still a work-in-progress.</strong> Currently, none of the code is run, so the notebook will appear blank.</p>
-</blockquote>
+<div class="d-contents d-contents-float">
+<nav class="l-text toc figcaption" id="TOC">
+<h3>Contents</h3>
+<ul>
+<li><a href="#accessing-the-api-and-caching">Accessing the API and caching</a></li>
+<li><a href="#data-collection">Data collection</a>
+<ul>
+<li><a href="#list-of-my-playlists">List of my playlists</a></li>
+<li><a href="#playlist-information">Playlist information</a></li>
+<li><a href="#track-information">Track information</a></li>
+</ul></li>
+</ul>
+</nav>
+</div>
+<p>Spotify actually has another API for collecting additional details about playlists, albums, artists, and tracks. (It also contains endpoints for a user to control their own playlists and song playback, but those are not relevant for this project.) Below, I collect as much data as possible about songs I listen to using this API.</p>
+<h2 id="accessing-the-api-and-caching">Accessing the API and caching</h2>
+<p>To access the API, I used the <a href="https://www.rcharlie.com/spotifyr/">‘spotifyr’</a> R package. The instructions are setting up a developer account and aquiring access keys from Spotify are detailed in the documentation for ‘spotifyr’.</p>
+<p>To make development and reproduction a bit faster, I wrapped all of the ‘spotifyr’ functions I used in <code>memoise::memoise()</code> from the <a href="http://memoise.r-lib.org">‘memoise’</a> package. I also cached the long-running data frame creation steps using the <a href="https://jhrcook.github.io/mustashe/">‘mustashe’</a> package.</p>
 <div class="layout-chunk" data-layout="l-body">
 
 </div>
-<p>Get all of my playlists.</p>
+<h2 id="data-collection">Data collection</h2>
+<p>Track and artist information must be queried using their unique IDs assigned by Spotify. Annoyingly, the personal data I have already downloaded does <em>not</em> contain these IDs with the tracks. Therefore, I instead used the API to collect all of my playlist information, extracted the songs (and their IDs) from the playlists, and used those to query. Because of this limitation, I was not able to access the detailed information from every song in my streaming history, but this will get most of them and all of my most popular tracks.</p>
+<h3 id="list-of-my-playlists">List of my playlists</h3>
+<p>In the following code, I collected the names and IDs of all of my playlists. A sample of the resultant data frame is presented.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre><code><span class='va'>my_playlists</span> <span class='op'>&lt;-</span> <span class='fu'>get_my_playlists_memo</span><span class='op'>(</span>limit <span class='op'>=</span> <span class='fl'>50</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
@@ -2095,9 +2117,99 @@ Analysis
 </div>
 </div>
 <div class="layout-chunk" data-layout="l-body">
-
+<table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+name
+</th>
+<th style="text-align:left;">
+id
+</th>
+<th style="text-align:left;">
+uri
+</th>
+<th style="text-align:right;">
+tracks_total
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Coffee Shop Sounds
+</td>
+<td style="text-align:left;">
+3SoFTOMn9GQem4yXRiMsP3
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:3SoFTOMn9GQem4yXRiMsP3" class="uri">spotify:playlist:3SoFTOMn9GQem4yXRiMsP3</a>
+</td>
+<td style="text-align:right;">
+71
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+do not go gently
+</td>
+<td style="text-align:left;">
+4LZeYGsNyZ3pzIIhLkcSHb
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:4LZeYGsNyZ3pzIIhLkcSHb" class="uri">spotify:playlist:4LZeYGsNyZ3pzIIhLkcSHb</a>
+</td>
+<td style="text-align:right;">
+157
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Deep Focus
+</td>
+<td style="text-align:left;">
+37i9dQZF1DWZeKCadgRdKQ
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:37i9dQZF1DWZeKCadgRdKQ" class="uri">spotify:playlist:37i9dQZF1DWZeKCadgRdKQ</a>
+</td>
+<td style="text-align:right;">
+190
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Coding
+</td>
+<td style="text-align:left;">
+08nu8IFkbbXkiaYkofMVwv
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:08nu8IFkbbXkiaYkofMVwv" class="uri">spotify:playlist:08nu8IFkbbXkiaYkofMVwv</a>
+</td>
+<td style="text-align:right;">
+175
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Good Bakcground
+</td>
+<td style="text-align:left;">
+5uzutKLSRFtPqFaxjjRO56
+</td>
+<td style="text-align:left;">
+<a href="spotify:playlist:5uzutKLSRFtPqFaxjjRO56" class="uri">spotify:playlist:5uzutKLSRFtPqFaxjjRO56</a>
+</td>
+<td style="text-align:right;">
+3
+</td>
+</tr>
+</tbody>
+</table>
 </div>
-<p>For each playlist, get all of the information.</p>
+<h3 id="playlist-information">Playlist information</h3>
+<p>The playlist IDs were then used to get all of the information about the playlists. The <code>data</code> column of the <code>playlist_df</code> data frame contains a data frame for each playlist with the track and album information.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre><code><span class='va'>get_playlist_info</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>playlist_id</span><span class='op'>)</span> <span class='op'>{</span>
@@ -2112,17 +2224,72 @@ Analysis
     <span class='op'>)</span>
 <span class='op'>}</span>
 
-<span class='va'>playlist_df</span> <span class='op'>&lt;-</span> <span class='va'>my_playlists</span> <span class='op'>%&gt;%</span>
-  <span class='fu'>mutate</span><span class='op'>(</span>data <span class='op'>=</span> <span class='fu'>map</span><span class='op'>(</span><span class='va'>id</span>, <span class='va'>get_playlist_info</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>stash</span><span class='op'>(</span><span class='st'>"playlist_df"</span>, depends_on <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"my_playlists"</span><span class='op'>)</span>, <span class='op'>{</span>
+  <span class='va'>playlist_df</span> <span class='op'>&lt;-</span> <span class='va'>my_playlists</span> <span class='op'>%&gt;%</span>
+    <span class='fu'>mutate</span><span class='op'>(</span>data <span class='op'>=</span> <span class='fu'>map</span><span class='op'>(</span><span class='va'>id</span>, <span class='va'>get_playlist_info</span><span class='op'>)</span><span class='op'>)</span>
+<span class='op'>}</span><span class='op'>)</span>
 </code></pre>
 </div>
 </div>
-<p>For each track, get the “features” and “analysis” from Spotify.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["name"],"name":[1],"type":["chr"],"align":["left"]},{"label":["id"],"name":[2],"type":["chr"],"align":["left"]},{"label":["uri"],"name":[3],"type":["chr"],"align":["left"]},{"label":["tracks_total"],"name":[4],"type":["int"],"align":["right"]},{"label":["data"],"name":[5],"type":["list"],"align":["right"]}],"data":[{"1":"Coffee Shop Sounds","2":"3SoFTOMn9GQem4yXRiMsP3","3":"spotify:playlist:3SoFTOMn9GQem4yXRiMsP3","4":"71","5":"<tbl_df[,12]>"},{"1":"do not go gently","2":"4LZeYGsNyZ3pzIIhLkcSHb","3":"spotify:playlist:4LZeYGsNyZ3pzIIhLkcSHb","4":"157","5":"<tbl_df[,12]>"},{"1":"Deep Focus","2":"37i9dQZF1DWZeKCadgRdKQ","3":"spotify:playlist:37i9dQZF1DWZeKCadgRdKQ","4":"190","5":"<tbl_df[,12]>"},{"1":"Coding","2":"08nu8IFkbbXkiaYkofMVwv","3":"spotify:playlist:08nu8IFkbbXkiaYkofMVwv","4":"175","5":"<tbl_df[,12]>"},{"1":"Good Bakcground","2":"5uzutKLSRFtPqFaxjjRO56","3":"spotify:playlist:5uzutKLSRFtPqFaxjjRO56","4":"3","5":"<tbl_df[,12]>"},{"1":"Your Favorite Coffeehouse","2":"37i9dQZF1DX6ziVCJnEm59","3":"spotify:playlist:37i9dQZF1DX6ziVCJnEm59","4":"121","5":"<tbl_df[,12]>"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<h3 id="track-information">Track information</h3>
+<p>Then, I gathered the track names and IDs from each playlist and queried the API to obtain as much information from Spotify as possible. For each track, Spotify has what they call <a href="https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/">“features”</a> and <a href="https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-analysis/">“analysis”</a> (links are to the API documentation). The “features” data tend to be quantitative characteristics of the track such as <em>danceability</em>, <em>acousticness</em>, and <em>liveness</em>. The “analysis” data are various time decompositions of the songs at different scales such as into their beats, segments, etc.</p>
+<p>The following code shows the functions that collect and clean the data returned by the API calls.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre><code><span class='va'>clean_track_info</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='fu'>tibble</span><span class='op'>(</span>
+    album_id <span class='op'>=</span> <span class='va'>x</span><span class='op'>$</span><span class='va'>album</span><span class='op'>$</span><span class='va'>id</span>,
+    album_name <span class='op'>=</span> <span class='va'>x</span><span class='op'>$</span><span class='va'>album</span><span class='op'>$</span><span class='va'>name</span>,
+    duration <span class='op'>=</span> <span class='va'>x</span><span class='op'>$</span><span class='va'>duration_ms</span>,
+    explicit <span class='op'>=</span> <span class='va'>x</span><span class='op'>$</span><span class='va'>explicit</span>,
+    popularity <span class='op'>=</span> <span class='va'>x</span><span class='op'>$</span><span class='va'>popularity</span>,
+    album_info <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>$</span><span class='va'>album</span><span class='op'>)</span>,
+    release_date <span class='op'>=</span> <span class='va'>x</span><span class='op'>$</span><span class='va'>album</span><span class='op'>$</span><span class='va'>release_date</span>,
+    release_date_precision <span class='op'>=</span> <span class='va'>x</span><span class='op'>$</span><span class='va'>album</span><span class='op'>$</span><span class='va'>release_date_precision</span>
+  <span class='op'>)</span>
+<span class='op'>}</span>
+
+<span class='va'>clean_track_features</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='fu'>janitor</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/janitor/man/clean_names.html'>clean_names</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+    <span class='fu'>select</span><span class='op'>(</span><span class='op'>-</span><span class='va'>id</span>, <span class='op'>-</span><span class='va'>uri</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+<span class='va'>clean_track_analysis</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='va'>x</span><span class='op'>[</span><span class='op'>-</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>]</span> <span class='op'>%&gt;%</span>
+    <span class='fu'>map</span><span class='op'>(</span><span class='va'>list</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+    <span class='fu'>as_tibble</span><span class='op'>(</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+
+<span class='va'>get_track_data</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>id</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'>bind_cols</span><span class='op'>(</span>
+    <span class='fu'>get_track_memo</span><span class='op'>(</span>id <span class='op'>=</span> <span class='va'>id</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>clean_track_info</span><span class='op'>(</span><span class='op'>)</span>,
+    <span class='fu'>get_track_audio_features_memo</span><span class='op'>(</span>id <span class='op'>=</span> <span class='va'>id</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>clean_track_features</span><span class='op'>(</span><span class='op'>)</span>,
+    <span class='fu'>get_track_audio_analysis_memo</span><span class='op'>(</span>id <span class='op'>=</span> <span class='va'>id</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>clean_track_analysis</span><span class='op'>(</span><span class='op'>)</span>
+  <span class='op'>)</span>
+<span class='op'>}</span>
+
+<span class='va'>get_track_data</span> <span class='op'>&lt;-</span> <span class='fu'>memoise</span><span class='op'>(</span><span class='va'>get_track_data</span>, cache <span class='op'>=</span> <span class='fu'>cache_filesystem</span><span class='op'>(</span><span class='va'>cache_path</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<p>Each track is run through <code>get_track_data()</code> to get and organize all of the data. The resulting data frame is cached for future analysis and some columns are displayed below as examples.</p>
 <div class="layout-chunk" data-layout="l-body">
 
 </div>
 <div class="layout-chunk" data-layout="l-body">
-
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["track_name"],"name":[1],"type":["chr"],"align":["left"]},{"label":["track_id"],"name":[2],"type":["chr"],"align":["left"]},{"label":["album_id"],"name":[3],"type":["chr"],"align":["left"]},{"label":["album_name"],"name":[4],"type":["chr"],"align":["left"]},{"label":["duration"],"name":[5],"type":["int"],"align":["right"]},{"label":["explicit"],"name":[6],"type":["lgl"],"align":["right"]},{"label":["popularity"],"name":[7],"type":["int"],"align":["right"]},{"label":["album_info"],"name":[8],"type":["list"],"align":["right"]},{"label":["release_date"],"name":[9],"type":["chr"],"align":["left"]},{"label":["release_date_precision"],"name":[10],"type":["chr"],"align":["left"]},{"label":["danceability"],"name":[11],"type":["dbl"],"align":["right"]},{"label":["energy"],"name":[12],"type":["dbl"],"align":["right"]},{"label":["key"],"name":[13],"type":["int"],"align":["right"]},{"label":["loudness"],"name":[14],"type":["dbl"],"align":["right"]},{"label":["mode"],"name":[15],"type":["int"],"align":["right"]},{"label":["speechiness"],"name":[16],"type":["dbl"],"align":["right"]},{"label":["acousticness"],"name":[17],"type":["dbl"],"align":["right"]},{"label":["instrumentalness"],"name":[18],"type":["dbl"],"align":["right"]},{"label":["liveness"],"name":[19],"type":["dbl"],"align":["right"]},{"label":["valence"],"name":[20],"type":["dbl"],"align":["right"]},{"label":["tempo"],"name":[21],"type":["dbl"],"align":["right"]},{"label":["type"],"name":[22],"type":["chr"],"align":["left"]},{"label":["track_href"],"name":[23],"type":["chr"],"align":["left"]},{"label":["analysis_url"],"name":[24],"type":["chr"],"align":["left"]},{"label":["duration_ms"],"name":[25],"type":["int"],"align":["right"]},{"label":["time_signature"],"name":[26],"type":["int"],"align":["right"]},{"label":["bars"],"name":[27],"type":["list"],"align":["right"]},{"label":["beats"],"name":[28],"type":["list"],"align":["right"]},{"label":["sections"],"name":[29],"type":["list"],"align":["right"]},{"label":["segments"],"name":[30],"type":["list"],"align":["right"]},{"label":["tatums"],"name":[31],"type":["list"],"align":["right"]}],"data":[{"1":"Hopeless Wanderer","2":"5CuzKVPTLpU99rY0DMmcbF","3":"4JwHZha3ZArwGI5ZqD4VOl","4":"Piano Tribute to Mumford & Sons, Vol. 2","5":"229600","6":"FALSE","7":"0","8":"<named list [13]>","9":"2012-10-30","10":"day","11":"0.558","12":"0.329","13":"7","14":"-17.545","15":"0","16":"0.0483","17":"0.9450","18":"8.11e-01","19":"0.0899","20":"0.1660","21":"119.991","22":"audio_features","23":"https://api.spotify.com/v1/tracks/5CuzKVPTLpU99rY0DMmcbF","24":"https://api.spotify.com/v1/audio-analysis/5CuzKVPTLpU99rY0DMmcbF","25":"229600","26":"1","27":"<df[,3] [114 × 3]>","28":"<df[,3] [453 × 3]>","29":"<df[,12] [11 × 12]>","30":"<df[,9] [607 × 9]>","31":"<df[,3] [906 × 3]>"},{"1":"Wilderness","2":"2qw3TJxd8Wn2ZVGHkf8YaW","3":"75KCEmU9IxlwClwPnM4KEC","4":"Adaptations","5":"206015","6":"FALSE","7":"55","8":"<named list [13]>","9":"2019-01-25","10":"day","11":"0.303","12":"0.115","13":"0","14":"-14.611","15":"1","16":"0.0300","17":"0.9000","18":"9.70e-04","19":"0.0806","20":"0.0818","21":"92.352","22":"audio_features","23":"https://api.spotify.com/v1/tracks/2qw3TJxd8Wn2ZVGHkf8YaW","24":"https://api.spotify.com/v1/audio-analysis/2qw3TJxd8Wn2ZVGHkf8YaW","25":"206015","26":"3","27":"<df[,3] [103 × 3]>","28":"<df[,3] [311 × 3]>","29":"<df[,12] [8 × 12]>","30":"<df[,9] [475 × 9]>","31":"<df[,3] [622 × 3]>"},{"1":"Karma","2":"3VygfAvvgVaJUeaBUSzlZu","3":"02tIakRsIFGW8sO4pBtJgj","4":"Neotheater","5":"245269","6":"FALSE","7":"63","8":"<named list [13]>","9":"2019-04-26","10":"day","11":"0.528","12":"0.727","13":"6","14":"-5.739","15":"1","16":"0.1790","17":"0.0557","18":"0.00e+00","19":"0.1760","20":"0.2120","21":"155.927","22":"audio_features","23":"https://api.spotify.com/v1/tracks/3VygfAvvgVaJUeaBUSzlZu","24":"https://api.spotify.com/v1/audio-analysis/3VygfAvvgVaJUeaBUSzlZu","25":"245270","26":"4","27":"<df[,3] [158 × 3]>","28":"<df[,3] [633 × 3]>","29":"<df[,12] [12 × 12]>","30":"<df[,9] [958 × 9]>","31":"<df[,3] [1,266 × 3]>"},{"1":"...To Die For - From \"The Lion King\"/Score","2":"2wQN8tMYOHStr6Q61jh0IK","3":"3YA5DdB3wSz4pdfEXoMyRd","4":"The Lion King","5":"257640","6":"FALSE","7":"48","8":"<named list [13]>","9":"1994-01-01","10":"day","11":"0.144","12":"0.239","13":"4","14":"-20.380","15":"1","16":"0.0544","17":"0.7980","18":"9.10e-01","19":"0.2890","20":"0.0505","21":"142.711","22":"audio_features","23":"https://api.spotify.com/v1/tracks/2wQN8tMYOHStr6Q61jh0IK","24":"https://api.spotify.com/v1/audio-analysis/2wQN8tMYOHStr6Q61jh0IK","25":"257640","26":"4","27":"<df[,3] [148 × 3]>","28":"<df[,3] [596 × 3]>","29":"<df[,12] [12 × 12]>","30":"<df[,9] [764 × 9]>","31":"<df[,3] [1,192 × 3]>"},{"1":"I Still Love You","2":"2Zcz1ZFy0JlGVX0oXn7vE7","3":"4blSbmJr7rIehMd308tBGl","4":"I Still Love You","5":"216318","6":"FALSE","7":"42","8":"<named list [13]>","9":"2014-04-23","10":"day","11":"0.584","12":"0.393","13":"8","14":"-8.049","15":"1","16":"0.0286","17":"0.7810","18":"4.34e-06","19":"0.1100","20":"0.0870","21":"120.042","22":"audio_features","23":"https://api.spotify.com/v1/tracks/2Zcz1ZFy0JlGVX0oXn7vE7","24":"https://api.spotify.com/v1/audio-analysis/2Zcz1ZFy0JlGVX0oXn7vE7","25":"216319","26":"4","27":"<df[,3] [106 × 3]>","28":"<df[,3] [420 × 3]>","29":"<df[,12] [8 × 12]>","30":"<df[,9] [637 × 9]>","31":"<df[,3] [840 × 3]>"},{"1":"Wild Trails","2":"2urxHALnoeVxG82o57q0ny","3":"3tMJzCDzTcRS8o6pImIE2c","4":"Wild Trails","5":"218501","6":"FALSE","7":"53","8":"<named list [13]>","9":"2019-08-27","10":"day","11":"0.213","12":"0.233","13":"4","14":"-14.347","15":"1","16":"0.0289","17":"0.7420","18":"8.81e-01","19":"0.1490","20":"0.0378","21":"94.940","22":"audio_features","23":"https://api.spotify.com/v1/tracks/2urxHALnoeVxG82o57q0ny","24":"https://api.spotify.com/v1/audio-analysis/2urxHALnoeVxG82o57q0ny","25":"218502","26":"3","27":"<df[,3] [111 × 3]>","28":"<df[,3] [334 × 3]>","29":"<df[,12] [12 × 12]>","30":"<df[,9] [565 × 9]>","31":"<df[,3] [668 × 3]>"},{"1":"Silver Lining","2":"2yf1ibNuXk2VwKyGCIIpmA","3":"6ppAmnM0WuNYgrSXC43dKJ","4":"Summer Tales","5":"188933","6":"FALSE","7":"55","8":"<named list [13]>","9":"2020-06-02","10":"day","11":"0.471","12":"0.138","13":"11","14":"-23.623","15":"1","16":"0.0351","17":"0.8770","18":"8.78e-01","19":"0.1030","20":"0.0493","21":"135.934","22":"audio_features","23":"https://api.spotify.com/v1/tracks/2yf1ibNuXk2VwKyGCIIpmA","24":"https://api.spotify.com/v1/audio-analysis/2yf1ibNuXk2VwKyGCIIpmA","25":"188934","26":"4","27":"<df[,3] [104 × 3]>","28":"<df[,3] [420 × 3]>","29":"<df[,12] [7 × 12]>","30":"<df[,9] [479 × 9]>","31":"<df[,3] [840 × 3]>"},{"1":"Sense of Home","2":"68wibJU4yMiqNX79IaLAsN","3":"4uJY9pRMcABooRV50bf9Wu","4":"Sense of Home","5":"265840","6":"FALSE","7":"64","8":"<named list [13]>","9":"2015-03-31","10":"day","11":"0.564","12":"0.207","13":"3","14":"-10.926","15":"1","16":"0.0320","17":"0.8920","18":"1.80e-06","19":"0.1020","20":"0.0898","21":"139.933","22":"audio_features","23":"https://api.spotify.com/v1/tracks/68wibJU4yMiqNX79IaLAsN","24":"https://api.spotify.com/v1/audio-analysis/68wibJU4yMiqNX79IaLAsN","25":"265840","26":"4","27":"<df[,3] [149 × 3]>","28":"<df[,3] [596 × 3]>","29":"<df[,12] [10 × 12]>","30":"<df[,9] [793 × 9]>","31":"<df[,3] [1,192 × 3]>"},{"1":"Light Year","2":"1C2JiKNMjv8FaZlrgwObBJ","3":"2uEPdEPr1HkwxgHqJwecAn","4":"Light Year","5":"234000","6":"FALSE","7":"52","8":"<named list [13]>","9":"2019-07-28","10":"day","11":"0.301","12":"0.189","13":"9","14":"-16.072","15":"1","16":"0.0351","17":"0.9900","18":"8.93e-01","19":"0.1060","20":"0.0379","21":"139.894","22":"audio_features","23":"https://api.spotify.com/v1/tracks/1C2JiKNMjv8FaZlrgwObBJ","24":"https://api.spotify.com/v1/audio-analysis/1C2JiKNMjv8FaZlrgwObBJ","25":"234000","26":"4","27":"<df[,3] [134 × 3]>","28":"<df[,3] [532 × 3]>","29":"<df[,12] [12 × 12]>","30":"<df[,9] [762 × 9]>","31":"<df[,3] [1,064 × 3]>"},{"1":"Coffee Shop Noise, Pt. 16","2":"50BYgXJteVOFe2nKO4OnNp","3":"4z1Ua9N6qdSrG6ENPpdOgp","4":"Working and Studying: Coffee Shop Sounds","5":"91392","6":"FALSE","7":"18","8":"<named list [13]>","9":"2018-11-30","10":"day","11":"0.146","12":"0.857","13":"5","14":"-25.404","15":"0","16":"0.0363","17":"0.4540","18":"4.31e-05","19":"0.4030","20":"0.0231","21":"80.692","22":"audio_features","23":"https://api.spotify.com/v1/tracks/50BYgXJteVOFe2nKO4OnNp","24":"https://api.spotify.com/v1/audio-analysis/50BYgXJteVOFe2nKO4OnNp","25":"91392","26":"4","27":"<df[,3] [30 × 3]>","28":"<df[,3] [123 × 3]>","29":"<df[,12] [3 × 12]>","30":"<df[,9] [311 × 9]>","31":"<df[,3] [246 × 3]>"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
 </div>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->

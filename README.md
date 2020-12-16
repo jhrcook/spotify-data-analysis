@@ -4,7 +4,10 @@
 [![RStudio](https://img.shields.io/badge/RStudio-project-75AADB.svg?style=flat&logo=RStudio&logoColor=white)](https://www.rstudio.com)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
-The analysis of my personal Spotify data (downloaded on 2020-12-06).
+#### The analysis of my personal Spotify data is available at [https://jhrcook.github.io/spotify-data-analysis](https://jhrcook.github.io/spotify-data-analysis/).
+
+The Spotify data was downloaded on Dec. 6, 2020.
+The website is built using ['R Markdown'](https://rmarkdown.rstudio.com) and the ['Distill'](https://rstudio.github.io/distill/) package.
 
 ---
 
