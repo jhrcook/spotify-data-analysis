@@ -30,22 +30,73 @@ theme_set(ggthemes::theme_fivethirtyeight())
 pal_538 <- deframe(ggthemes_data[["fivethirtyeight"]])
 
 walk(list.files("lib", pattern = "R$", full.names = TRUE), source)
+
+track_info_df <- readRDS(here::here("data", "track_detailed_info.rds"))
+playlist_df <- readRDS(here::here("data", "playlist_detailed_info.rds"))
+```
+
+Mark songs that are just background noise.
+
+```{r}
+stop("Use `playlist_df` to mark various forms of songs (piano, background, normal)")
+```
+
+
+```{r}
+track_features <- track_info_df %.% {
+  select(track_name:album_name, danceability:tempo)
+}
+
+track_features_mat <- track_features %.% {
+  select(track_id, danceability:tempo)
+  as.data.frame()
+  column_to_rownames("track_id")
+}
+
+track_pca <- prcomp(track_features_mat, scale. = TRUE, center = TRUE)
+
+track_pcs_df <- track_features %.% {
+  select(track_name:album_name)
+  bind_cols(track_pca$x[, 1:2] %>% as_tibble())
+}
+
+
+p <- track_pcs_df %>%
+  ggplot(aes(x = PC1, y = PC2)) +
+  geom_point(aes(label = track_name)) +
+  theme(
+    axis.title.x = element_text(),
+    axis.title.y = element_text()
+  ) +
+  labs(x = "PC1", y = "PC2")
+plotly::ggplotly(p)
+```
+
+
+analyses:
+
+- PCA, t-SNE, hierarchical clustering of songs by track features
+  - plot with various color aesthetics: playlist, popularity, whathever features are most aligned with PCs 1 and 2
+
+---
+
+## Analysis of track segments of *Stacy* by Quinn XCII
+
+```{r}
+stacy_analysis <- track_info_df %>%
+  filter(track_name == "Stacy")
 ```
 
 ```{r}
-stacy_analysis <- readRDS(here::here("temp", "track_analysis"))
-```
-
-```{r}
-stacy_sections <- as_tibble(stacy_analysis$sections)
-display_head(stacy_sections)
+stacy_sections <- as_tibble(stacy_analysis$sections[[1]])
+rmarkdown::paged_table(stacy_sections)
 ```
 
 ```{r}
 bind_rows(
-  stacy_analysis$bars %>% add_column(type = "bars"),
-  stacy_analysis$beats %>% add_column(type = "beats"),
-  stacy_analysis$tatums %>% add_column(type = "tatums")
+  stacy_analysis$bars[[1]] %>% add_column(type = "bars"),
+  stacy_analysis$beats[[1]] %>% add_column(type = "beats"),
+  stacy_analysis$tatums[[1]] %>% add_column(type = "tatums")
 ) %.%
   {
     as_tibble()
@@ -67,9 +118,9 @@ bind_rows(
 
 ```{r}
 bind_rows(
-  stacy_analysis$bars %>% add_column(type = "bars"),
-  stacy_analysis$beats %>% add_column(type = "beats"),
-  stacy_analysis$tatums %>% add_column(type = "tatums")
+  stacy_analysis$bars[[1]] %>% add_column(type = "bars"),
+  stacy_analysis$beats[[1]] %>% add_column(type = "beats"),
+  stacy_analysis$tatums[[1]] %>% add_column(type = "tatums")
 ) %.%
   {
     as_tibble()
@@ -91,7 +142,7 @@ bind_rows(
 ```
 
 ```{r}
-stacy_segment_tidy <- stacy_analysis$segments %.% {
+stacy_segment_tidy <- stacy_analysis$segments[[1]] %.% {
   as_tibble()
   mutate(
     idx = row_number(),
@@ -137,7 +188,7 @@ stacy_segment_tidy %.%
 ```
 
 ```{r}
-tibble(pitches = unlist(stacy_analysis$segments$pitches)) %>%
+tibble(pitches = unlist(stacy_analysis$segments[[1]]$pitches)) %>%
   ggplot(aes(x = pitches)) +
   geom_histogram(binwidth = 0.05)
 ```

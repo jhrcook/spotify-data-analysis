@@ -118,6 +118,7 @@ stash("playlist_df", depends_on = c("my_playlists"), {
 ```
 
 ```{r}
+saveRDS(playlist_df, here::here("data", "playlist_detailed_info.rds"))
 rmarkdown::paged_table(head(playlist_df))
 ```
 
