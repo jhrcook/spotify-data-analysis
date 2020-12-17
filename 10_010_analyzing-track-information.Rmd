@@ -33,14 +33,40 @@ walk(list.files("lib", pattern = "R$", full.names = TRUE), source)
 
 track_info_df <- readRDS(here::here("data", "track_detailed_info.rds"))
 playlist_df <- readRDS(here::here("data", "playlist_detailed_info.rds"))
+
+set.seed(0)
 ```
 
 Mark songs that are just background noise.
 
 ```{r}
-stop("Use `playlist_df` to mark various forms of songs (piano, background, normal)")
-```
+track_to_playlist_map <- playlist_df %.% {
+  select(playlist_name = name, playlist_id = id, data)
+  unnest(data)
+  select(playlist_name:track_id)
+  distinct()
+  group_by(track_name, track_id)
+  nest()
+  rename(playlist_data = data)
+}
 
+background_playlists <- c(
+  "Coffee Shop Sounds", "Deep Focus", "Good Bakcground",
+  "Your Favorite Coffeehouse", "Emotional Sounds", "Peaceful Nature"
+)
+
+instrumental_playlists <- c("Instrumental", "Classical Playlist")
+
+ignore_playlists <- c("Discover Weekly")
+
+regular_playlists <- unique(playlist_df$name)
+idx <- regular_playlists %in% c(
+  background_playlists,
+  instrumental_playlists,
+  ignore_playlists
+)
+regular_playlists <- regular_playlists[!idx]
+```
 
 ```{r}
 track_features <- track_info_df %.% {
@@ -58,20 +84,151 @@ track_pca <- prcomp(track_features_mat, scale. = TRUE, center = TRUE)
 track_pcs_df <- track_features %.% {
   select(track_name:album_name)
   bind_cols(track_pca$x[, 1:2] %>% as_tibble())
+  left_join(track_to_playlist_map, by = c("track_name", "track_id"))
+  mutate(playlist = map_chr(playlist_data, function(df) {
+    if (nrow(df) > 1) {
+      return("multiple")
+    }
+    return(df$playlist_name[[1]])
+  }))
 }
+```
 
+```{r}
+as.data.frame(t(summary(track_pca)$importance)) %.%
+  {
+    janitor::clean_names()
+    rownames_to_column("PC")
+    mutate(PC = as.numeric(str_remove(PC, "^PC")))
+  } %>%
+  ggplot(aes(PC, proportion_of_variance)) +
+  geom_col(fill = "grey50", width = 0.7) +
+  geom_line(color = colorspace::darken(spotify_green), size = 1, lty = 2) +
+  geom_point(color = colorspace::darken(spotify_green), size = 3) +
+  scale_x_continuous(
+    breaks = 1:20
+  ) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.02)),
+    breaks = seq(0, 0.4, 0.05),
+  ) +
+  theme(
+    axis.title.x = element_text(),
+    axis.title.y = element_text(),
+    panel.grid.major.x = element_blank()
+  ) +
+  labs(x = "principal components", y = "porportion of variance")
+```
 
-p <- track_pcs_df %>%
-  ggplot(aes(x = PC1, y = PC2)) +
-  geom_point(aes(label = track_name)) +
+```{r}
+track_pca$rotation %.%
+  {
+    as.data.frame()
+    rownames_to_column(var = "feature")
+    as_tibble()
+  } %>%
+  ggplot(aes(PC1, PC2)) +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
+  ggrepel::geom_label_repel(
+    aes(label = feature),
+    fill = spotify_dark,
+    color = "white",
+    label.size = 0,
+    fontface = "bold",
+    label.padding = unit(1.3, "mm"),
+    label.r = unit(1, "mm")
+  ) +
   theme(
     axis.title.x = element_text(),
     axis.title.y = element_text()
   ) +
-  labs(x = "PC1", y = "PC2")
-plotly::ggplotly(p)
+  labs(x = "PC1", y = "PC2", title = "Contribution of song features to decomposition")
 ```
 
+```{r, fig.height=8}
+plot_track_pca <- function(df, color, title, size = NULL, alpha = 0.6) {
+  df %>%
+    ggplot(aes(x = PC1, y = PC2)) +
+    geom_point(aes(color = {{ color }}, size = {{ size }}), alpha = alpha) +
+    theme(
+      axis.title.x = element_text(),
+      axis.title.y = element_text(),
+      legend.title = element_blank()
+    ) +
+    labs(
+      x = "PC1",
+      y = "PC2",
+      title = title
+    )
+}
+
+plot_track_pca(track_pcs_df, playlist, "PCA: Playlist") +
+  scale_color_discrete(
+    guide = guide_legend(nrow = 6)
+  )
+```
+
+```{r, fig.height=7}
+track_pcs_df %>%
+  unnest(playlist_data) %>%
+  mutate(playlist_grp = case_when(
+    playlist_name %in% background_playlists ~ "Background",
+    playlist_name %in% instrumental_playlists ~ "Instrumental",
+    playlist_name %in% regular_playlists ~ "Rock & Hip Hop",
+    playlist_name %in% ignore_playlists ~ "Discover Weekly"
+  )) %>%
+  select(track_name, track_id, PC1, PC2, playlist_grp) %>%
+  group_by(track_name, track_id, PC1, PC2, playlist_grp) %>%
+  distinct() %>%
+  summarise(playlist_grp = ifelse(n() > 1, "multiple", playlist_grp)) %>%
+  ungroup() %>%
+  plot_track_pca(playlist_grp, "PCA: Playlist Category") +
+  scale_color_brewer(
+    type = "qual", palette = "Set1",
+    guide = guide_legend(nrow = 1)
+  )
+```
+
+```{r, fig.height=7}
+scale_numeric <- function(x, na.rm = TRUE) {
+  (x - mean(x, na.rm = na.rm)) / sd(x, na.rm = na.rm)
+}
+
+track_pcs_df %.%
+  {
+    left_join(
+      track_features %>% select(-c(album_name, album_id)),
+      by = c("track_name", "track_id")
+    )
+    mutate(
+      acousticness = scale_numeric(acousticness),
+      loudness = scale_numeric(loudness),
+      color = loudness - acousticness,
+    )
+  } %>%
+  plot_track_pca(
+    color = color,
+    title = "Distribution of the features defining PC1",
+    alpha = 1
+  ) +
+  annotate(
+    "text",
+    x = c(-1.2, 1.2), y = -3,
+    label = c("Acousticness", "Loudness"),
+    color = c("#3775B9", "#FE5B31"),
+    size = 5,
+    fontface = "bold",
+    hjust = c(1, 0)
+  ) +
+  annotate(
+    "segment",
+    x = 0, y = -3, xend = c(-0.7, 0.7), yend = -3,
+    arrow = arrow(length = unit(2, "mm"), type = "closed")
+  ) +
+  scale_color_distiller(type = "div", palette = "RdYlBu") +
+  scale_size_continuous(range = c(1, 3))
+```
 
 analyses:
 
