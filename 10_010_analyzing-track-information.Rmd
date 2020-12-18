@@ -81,16 +81,22 @@ track_features_mat <- track_features %.% {
 
 track_pca <- prcomp(track_features_mat, scale. = TRUE, center = TRUE)
 
+add_playlist_names <- function(df,
+                               playlist_df,
+                               by = c("track_name", "track_id")) {
+  left_join(df, playlist_df, by = by) %>%
+    mutate(playlist = map_chr(playlist_data, function(df) {
+      if (nrow(df) > 1) {
+        return("multiple")
+      }
+      return(df$playlist_name[[1]])
+    }))
+}
+
 track_pcs_df <- track_features %.% {
   select(track_name:album_name)
   bind_cols(track_pca$x[, 1:2] %>% as_tibble())
-  left_join(track_to_playlist_map, by = c("track_name", "track_id"))
-  mutate(playlist = map_chr(playlist_data, function(df) {
-    if (nrow(df) > 1) {
-      return("multiple")
-    }
-    return(df$playlist_name[[1]])
-  }))
+  add_playlist_names(track_to_playlist_map)
 }
 ```
 
@@ -147,46 +153,59 @@ track_pca$rotation %.%
 ```
 
 ```{r, fig.height=8}
-plot_track_pca <- function(df, color, title, size = NULL, alpha = 0.6) {
+plot_track_pca <- function(df, x, y, color = NULL, size = NULL, alpha = 0.6) {
   df %>%
-    ggplot(aes(x = PC1, y = PC2)) +
+    ggplot(aes(x = {{ x }}, y = {{ y }})) +
     geom_point(aes(color = {{ color }}, size = {{ size }}), alpha = alpha) +
     theme(
       axis.title.x = element_text(),
       axis.title.y = element_text(),
       legend.title = element_blank()
-    ) +
-    labs(
-      x = "PC1",
-      y = "PC2",
-      title = title
     )
 }
 
-plot_track_pca(track_pcs_df, playlist, "PCA: Playlist") +
+plot_track_pca(track_pcs_df, PC1, PC2, color = playlist) +
   scale_color_discrete(
     guide = guide_legend(nrow = 6)
   )
 ```
 
 ```{r, fig.height=7}
-track_pcs_df %>%
-  unnest(playlist_data) %>%
-  mutate(playlist_grp = case_when(
-    playlist_name %in% background_playlists ~ "Background",
-    playlist_name %in% instrumental_playlists ~ "Instrumental",
-    playlist_name %in% regular_playlists ~ "Rock & Hip Hop",
-    playlist_name %in% ignore_playlists ~ "Discover Weekly"
-  )) %>%
-  select(track_name, track_id, PC1, PC2, playlist_grp) %>%
-  group_by(track_name, track_id, PC1, PC2, playlist_grp) %>%
-  distinct() %>%
-  summarise(playlist_grp = ifelse(n() > 1, "multiple", playlist_grp)) %>%
-  ungroup() %>%
-  plot_track_pca(playlist_grp, "PCA: Playlist Category") +
+add_playlist_groups <- function(df) {
+  df %>%
+    mutate(playlist_grp = case_when(
+      playlist_name %in% background_playlists ~ "Background",
+      playlist_name %in% instrumental_playlists ~ "Instrumental",
+      playlist_name %in% regular_playlists ~ "Rock & Hip Hop",
+      playlist_name %in% ignore_playlists ~ "Discover Weekly"
+    ))
+}
+
+group_playlist_groups <- function(df, ...) {
+  df %>%
+    select(...) %>%
+    group_by(...) %>%
+    distinct() %>%
+    summarise(playlist_grp = ifelse(n() > 1, "multiple", playlist_grp)) %>%
+    ungroup()
+}
+
+
+track_pcs_df %.%
+  {
+    unnest(playlist_data)
+    add_playlist_groups()
+    group_playlist_groups(track_name, track_id, PC1, PC2, playlist_grp)
+  } %>%
+  plot_track_pca(PC1, PC2, color = playlist_grp) +
   scale_color_brewer(
     type = "qual", palette = "Set1",
     guide = guide_legend(nrow = 1)
+  ) +
+  labs(
+    x = "PC1",
+    y = "PC2",
+    title = "PCA: Playlist Category"
   )
 ```
 
@@ -208,8 +227,9 @@ track_pcs_df %.%
     )
   } %>%
   plot_track_pca(
+    PC1,
+    PC2,
     color = color,
-    title = "Distribution of the features defining PC1",
     alpha = 1
   ) +
   annotate(
@@ -227,13 +247,57 @@ track_pcs_df %.%
     arrow = arrow(length = unit(2, "mm"), type = "closed")
   ) +
   scale_color_distiller(type = "div", palette = "RdYlBu") +
-  scale_size_continuous(range = c(1, 3))
+  scale_size_continuous(range = c(1, 3)) +
+  labs(
+    x = "PC1",
+    y = "PC2",
+    title = "Distribution of the features defining PC1"
+  )
+```
+
+```{r, fig.height=7}
+track_tsne_data <- as.data.frame(track_features_mat) %.% {
+  rownames_to_column("track_id")
+  mutate_if(is.numeric, scale_numeric)
+  column_to_rownames("track_id")
+  distinct()
+}
+
+track_tsne <- track_tsne_data %>%
+  Rtsne::Rtsne()
+
+track_tsne_df <- as_tibble(track_tsne$Y) %.% {
+  mutate(track_id = rownames(track_tsne_data))
+  add_playlist_names(track_to_playlist_map, by = "track_id")
+}
+
+track_tsne_df %>%
+  plot_track_pca(V1, V2, color = playlist) +
+  labs(x = "t-SNE 1", y = "t-SNE 2", title = "t-SNE: Separation by playlist")
+```
+
+
+```{r, fig.height=7}
+track_tsne_df %.%
+  {
+    unnest(playlist_data)
+    add_playlist_groups()
+    group_playlist_groups(track_name, track_id, V1, V2, playlist_grp)
+  } %>%
+  plot_track_pca(V1, V2, color = playlist_grp) +
+  scale_color_brewer(
+    type = "qual", palette = "Set1",
+    guide = guide_legend(nrow = 1)
+  ) +
+  labs(x = "t-SNE 1", y = "t-SNE 2", title = "t-SNE: Separation by playlist category")
 ```
 
 analyses:
 
 - PCA, t-SNE, hierarchical clustering of songs by track features
-  - plot with various color aesthetics: playlist, popularity, whathever features are most aligned with PCs 1 and 2
+  - plot with various color aesthetics: playlist, popularity, whatever features are most aligned with PCs 1 and 2
+
+(hierarchical clustering wasn't very insightful)
 
 ---
 
