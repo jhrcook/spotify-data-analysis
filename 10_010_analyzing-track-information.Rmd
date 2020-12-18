@@ -292,6 +292,51 @@ track_tsne_df %.%
   labs(x = "t-SNE 1", y = "t-SNE 2", title = "t-SNE: Separation by playlist category")
 ```
 
+```{r}
+hiphop_songs <- track_to_playlist_map %.% {
+  unnest(playlist_data)
+  filter(playlist_name %in% c("do not go gently", "Coding"))
+  jhcutils::u_pull(track_id)
+}
+
+track_tsne_data <- as.data.frame(track_features_mat) %.% {
+  rownames_to_column("track_id")
+  filter(track_id %in% hiphop_songs)
+  mutate_if(is.numeric, scale_numeric)
+  column_to_rownames("track_id")
+  distinct()
+}
+
+track_tsne <- track_tsne_data %>%
+  Rtsne::Rtsne()
+
+track_to_album_map <- track_info_df %.% {
+  select(track_id, album_info)
+  mutate(artist = map_chr(album_info, ~ .x$artists$name[[1]]))
+  select(track_id, artist)
+}
+
+track_tsne_df <- as_tibble(track_tsne$Y) %.% {
+  mutate(track_id = rownames(track_tsne_data))
+  left_join(track_to_album_map, by = "track_id")
+}
+
+
+
+to_plot <- track_tsne_df %.% {
+  mutate(artist = fct_lump_n(artist, n = 5, other_level = "other"))
+}
+
+artist_pal <- c(RColorBrewer::brewer.pal(5, "Set2"), "grey80")
+names(artist_pal) <- levels(to_plot$artist)
+
+to_plot %>%
+  plot_track_pca(V1, V2, color = artist, alpha = 1) +
+  scale_color_manual(values = artist_pal) +
+  labs(x = "t-SNE 1", y = "t-SNE 2", title = "t-SNE: Separation of coding playlists by artist")
+```
+
+
 analyses:
 
 - PCA, t-SNE, hierarchical clustering of songs by track features
