@@ -17,10 +17,12 @@ output:
 knitr::opts_chunk$set(echo = FALSE, comment = "#>")
 
 library(nakedpipe)
+library(mustashe)
 library(magrittr)
 library(ggthemes)
 library(ggrepel)
 library(ggtext)
+library(patchwork)
 library(tidyverse)
 
 # To shut-up `summarise()`.
@@ -35,6 +37,8 @@ track_info_df <- readRDS(here::here("data", "track_detailed_info.rds"))
 playlist_df <- readRDS(here::here("data", "playlist_detailed_info.rds"))
 
 set.seed(0)
+
+point_overrise_aes <- list(size = 1.5, alpha = 1)
 ```
 
 Mark songs that are just background noise.
@@ -166,7 +170,7 @@ plot_track_pca <- function(df, x, y, color = NULL, size = NULL, alpha = 0.6) {
 
 plot_track_pca(track_pcs_df, PC1, PC2, color = playlist) +
   scale_color_discrete(
-    guide = guide_legend(nrow = 6)
+    guide = guide_legend(nrow = 6, override.aes = point_overrise_aes)
   )
 ```
 
@@ -200,7 +204,7 @@ track_pcs_df %.%
   plot_track_pca(PC1, PC2, color = playlist_grp) +
   scale_color_brewer(
     type = "qual", palette = "Set1",
-    guide = guide_legend(nrow = 1)
+    guide = guide_legend(nrow = 1, override.aes = point_overrise_aes)
   ) +
   labs(
     x = "PC1",
@@ -273,6 +277,9 @@ track_tsne_df <- as_tibble(track_tsne$Y) %.% {
 
 track_tsne_df %>%
   plot_track_pca(V1, V2, color = playlist) +
+  scale_color_discrete(
+    guide = guide_legend(nrow = 6, override.aes = point_overrise_aes)
+  ) +
   labs(x = "t-SNE 1", y = "t-SNE 2", title = "t-SNE: Separation by playlist")
 ```
 
@@ -287,62 +294,147 @@ track_tsne_df %.%
   plot_track_pca(V1, V2, color = playlist_grp) +
   scale_color_brewer(
     type = "qual", palette = "Set1",
-    guide = guide_legend(nrow = 1)
+    guide = guide_legend(nrow = 1, override.aes = point_overrise_aes)
   ) +
   labs(x = "t-SNE 1", y = "t-SNE 2", title = "t-SNE: Separation by playlist category")
 ```
 
+---
+
 ```{r}
-hiphop_songs <- track_to_playlist_map %.% {
-  unnest(playlist_data)
-  filter(playlist_name %in% c("do not go gently", "Coding"))
-  jhcutils::u_pull(track_id)
+cosine_similarity <- function(x, y) {
+  ((x %*% y) / (sqrt(sum(x^2)) * sqrt(sum(y^2))))[[1]]
 }
 
-track_tsne_data <- as.data.frame(track_features_mat) %.% {
-  rownames_to_column("track_id")
-  filter(track_id %in% hiphop_songs)
-  mutate_if(is.numeric, scale_numeric)
-  column_to_rownames("track_id")
-  distinct()
-}
-
-track_tsne <- track_tsne_data %>%
-  Rtsne::Rtsne()
-
-track_to_album_map <- track_info_df %.% {
-  select(track_id, album_info)
-  mutate(artist = map_chr(album_info, ~ .x$artists$name[[1]]))
-  select(track_id, artist)
-}
-
-track_tsne_df <- as_tibble(track_tsne$Y) %.% {
-  mutate(track_id = rownames(track_tsne_data))
-  left_join(track_to_album_map, by = "track_id")
-}
+track_metrics <- track_info_df %>%
+  select(track_id, danceability:tempo) %>%
+  mutate_if(is.numeric, scale_numeric) %>%
+  distinct() %>%
+  group_by(track_id) %>%
+  nest() %>%
+  deframe()
 
 
-
-to_plot <- track_tsne_df %.% {
-  mutate(artist = fct_lump_n(artist, n = 5, other_level = "other"))
-}
-
-artist_pal <- c(RColorBrewer::brewer.pal(5, "Set2"), "grey80")
-names(artist_pal) <- levels(to_plot$artist)
-
-to_plot %>%
-  plot_track_pca(V1, V2, color = artist, alpha = 1) +
-  scale_color_manual(values = artist_pal) +
-  labs(x = "t-SNE 1", y = "t-SNE 2", title = "t-SNE: Separation of coding playlists by artist")
+stash("track_similarities", depends_on = "track_metrics", {
+  track_similarities <- expand_grid(
+    from = names(track_metrics),
+    to = names(track_metrics)
+  ) %.% {
+    filter(from != to)
+    mutate(
+      cos_similarity = map2_dbl(from, to, function(a, b) {
+        x <- unlist(track_metrics[a])
+        y <- unlist(track_metrics[b])
+        cosine_similarity(x, y)
+      })
+    )
+  }
+})
 ```
 
+```{r}
+track_similarities %>%
+  ggplot(aes(x = cos_similarity)) +
+  geom_histogram(
+    aes(y = ..density..),
+    binwidth = 0.1,
+    fill = spotify_dark,
+    alpha = 0.5
+  ) +
+  geom_density(
+    size = 1.5,
+    color = spotify_dark
+  ) +
+  scale_x_continuous(
+    expand = c(0, 0),
+    breaks = seq(-1, 1, 0.25)
+  ) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.02))
+  ) +
+  theme(
+    axis.title.x = element_text()
+  ) +
+  labs(
+    x = "cosine similarity",
+    y = "density",
+    title = "Distribution of song similarities"
+  )
+```
 
-analyses:
+```{r, fig.height=6}
+track_sim_mat <- track_similarities %.% {
+  pivot_wider(id = from, names_from = to, values_from = cos_similarity)
+  as.data.frame()
+  column_to_rownames("from")
+  as.matrix()
+}
 
-- PCA, t-SNE, hierarchical clustering of songs by track features
-  - plot with various color aesthetics: playlist, popularity, whatever features are most aligned with PCs 1 and 2
+# track_sim_mat <- track_sim_mat[1:200, 1:200]
+clusters <- hclust(dist(track_sim_mat))
+track_order <- clusters$labels[clusters$order]
 
-(hierarchical clustering wasn't very insightful)
+track_label_plot <- track_to_playlist_map %.%
+  {
+    ungroup()
+    unnest(playlist_data)
+    distinct(track_id, playlist_name)
+    add_playlist_groups()
+    filter(track_id %in% track_order)
+    mutate(track_id = factor(track_id, track_order))
+  } %>%
+  ggplot(aes(x = track_id, y = 1, fill = playlist_grp)) +
+  geom_tile() +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_fill_brewer(
+    type = "qual", palette = "Set1",
+    guide = guide_legend(
+      title = "playlist",
+      ncol = 1,
+      direction = "vertical"
+    )
+  ) +
+  theme(
+    axis.text = element_blank(),
+    legend.position = "right",
+    legend.key.size = unit(4, "mm"),
+    plot.margin = margin()
+  )
+
+track_sim_matrix_plot <- track_similarities %.%
+  {
+    filter(from %in% track_order & to %in% track_order)
+    mutate(
+      from = factor(from, levels = track_order),
+      to = factor(to, levels = track_order)
+    )
+  } %>%
+  ggplot(aes(x = from, y = to, fill = cos_similarity)) +
+  geom_tile(color = NA) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_fill_gradient2(
+    guide = guide_colorbar(
+      title = "similarity",
+      barwidth = unit(4, "mm"),
+      direction = "vertical"
+    )
+  ) +
+  theme(
+    panel.grid.major = element_blank(),
+    axis.text = element_blank(),
+    legend.position = "right",
+    plot.margin = margin(),
+    plot.title = element_text(size = 14)
+  ) +
+  labs(title = "Clustering of tracks by similarity of music metrics")
+
+(
+  (track_sim_matrix_plot / track_label_plot) + plot_layout(heights = c(20, 1)) |
+    guide_area()
+) + plot_layout(widths = c(5, 1), guides = "collect")
+```
 
 ---
 

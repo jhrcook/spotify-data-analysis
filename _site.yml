@@ -22,7 +22,7 @@ navbar:
           href: 10_005_analyzing-my-streaming-history.html
         - text: "Trends in song characteristics"
           href: 10_010_analyzing-track-information.html
-        - text: "Spotify's inferences"
+        - text: "Spotify's 'inferences'"
           href: 10_015_analyzing-inferences.html
     - text: "About"
       href: about.html
