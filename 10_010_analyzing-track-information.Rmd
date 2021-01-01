@@ -90,27 +90,59 @@ rmarkdown::paged_table(single_track_sections)
 ```
 
 ```{r}
-bind_rows(
+track_timing_data <- bind_rows(
   single_track_info$bars[[1]] %>% add_column(type = "bars"),
   single_track_info$beats[[1]] %>% add_column(type = "beats"),
   single_track_info$tatums[[1]] %>% add_column(type = "tatums")
-) %.%
-  {
-    as_tibble()
-  } %>%
+) %>%
+  as_tibble()
+
+
+flipped_marginal_density_plots <- function(df, x, color, wrap_by, alpha = 0.3) {
+  p <- df %>%
+    ggplot(aes(x = {{ x }})) +
+    facet_wrap({{ wrap_by }}, scales = "free", ncol = 1) +
+    geom_density(aes(color = {{ color }}, fill = {{ color }}), alpha = alpha) +
+    coord_flip() +
+    theme(
+      axis.text.y = element_blank(),
+      axis.text.x = element_text(angle = -90, hjust = 0, vjust = 0.5),
+      plot.margin = margin(),
+      strip.text = element_blank(),
+      legend.position = "none"
+    )
+  return(p)
+}
+
+track_timing_density_plots <- track_timing_data %>%
+  flipped_marginal_density_plots(
+    x = duration,
+    color = type,
+    wrap_by = ~type,
+    alpha = 0.3
+  ) +
+  scale_color_fivethirtyeight() +
+  scale_fill_fivethirtyeight()
+
+track_timing_scatter_plots <- track_timing_data %>%
   ggplot(aes(x = start, y = duration, color = type)) +
   facet_wrap(~type, scales = "free_y", ncol = 1) +
   geom_point(alpha = 0.5) +
   scale_color_fivethirtyeight() +
   theme(
     plot.title = element_markdown(),
-    legend.position = "none"
+    legend.position = "none",
+    axis.title.x = element_text(),
+    axis.title.y = element_text(),
+    plot.margin = margin()
   ) +
   labs(
-    x = "time (ms)",
-    y = "confidence",
+    x = "song time",
+    y = "length(ms)",
     title = "Duration of timing features"
   )
+
+(track_timing_scatter_plots | track_timing_density_plots) + plot_layout(widths = c(10, 1))
 ```
 
 ```{r}
@@ -127,15 +159,15 @@ bind_rows(
   geom_hline(
     yintercept = 0.5,
     color = pal_538["Dark Gray"],
-    size = 1,
-    alpha = 0.7
+    size = 0.6,
+    alpha = 0.5
   ) +
   geom_point(alpha = 0.5) +
   geom_smooth(
     method = "loess",
     formula = "y~x",
-    span = 0.2,
-    se = FALSE
+    span = 0.3,
+    se = TRUE
   ) +
   scale_color_fivethirtyeight() +
   theme(
@@ -143,10 +175,14 @@ bind_rows(
     axis.title.x = element_text(),
     axis.title.y = element_text()
   ) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0.02, 0.02)),
+    labels = scales::label_percent(accuracy = 1)
+  ) +
   labs(
     x = "time (ms)",
     y = "confidence",
-    title = "Confidence in declaration of song timing features"
+    title = "Confidence in declaration of song timing durations"
   )
 ```
 
@@ -162,7 +198,18 @@ stacy_segment_tidy <- single_track_info$segments[[1]] %.% {
   unnest(value)
 }
 
-stacy_segment_tidy %>%
+marginal_density_plots <- stacy_segment_tidy %>%
+  flipped_marginal_density_plots(
+    x = value,
+    color = name,
+    wrap_by = ~name,
+    alpha = 0.3
+  ) +
+  scale_color_fivethirtyeight() +
+  scale_fill_fivethirtyeight()
+
+
+segment_scatter_plots <- stacy_segment_tidy %>%
   ggplot(aes(x = start, y = value, color = name)) +
   facet_wrap(~name, scales = "free_y", ncol = 1) +
   geom_point(size = 0.5, alpha = 0.3) +
@@ -172,48 +219,13 @@ stacy_segment_tidy %>%
     axis.title.x = element_text()
   ) +
   labs(
-    title = "Segment analysis of *Stacy*",
+    title = "Muscial features over the entire track",
     x = "time point"
   )
-```
 
-```{r}
-stacy_segment_tidy %.%
-  {
-    filter(name == "pitches")
-    group_by(idx, start)
-    summarise(avg_pitch = mean(value))
-    ungroup()
-  } %>%
-  ggplot(aes(x = start, y = avg_pitch)) +
-  geom_point(
-    size = 1,
-    alpha = 0.9,
-    color = pal_538["Blue"]
-  ) +
-  geom_smooth(
-    method = "loess",
-    formula = "y~x",
-    span = 0.5,
-    color = colorspace::darken(pal_538["Blue"], 0.3)
-  ) +
-  theme(
-    plot.title = element_markdown(),
-    axis.title.x = element_text()
-  ) +
-  labs(
-    title = "Average pitch",
-    x = "time"
-  )
-```
-
-```{r}
-tibble(pitches = unlist(single_track_info$segments[[1]]$pitches)) %>%
-  ggplot(aes(x = pitches)) +
-  geom_histogram(breaks = seq(0, 1, 0.05)) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = expansion(c(0, 0.02))) +
-  labs(title = "Distribution of pitch")
+(
+  segment_scatter_plots | marginal_density_plots
+) + plot_layout(widths = c(10, 1))
 ```
 
 ---
@@ -255,7 +267,7 @@ group_playlist_groups <- function(df, ...) {
 }
 ```
 
-```{r}
+```{r, fig.height=8}
 track_info_df %.%
   {
     select(track_id, danceability:tempo)
@@ -274,10 +286,12 @@ track_info_df %.%
   ggplot(aes(x = feature, y = value, group = track_id)) +
   facet_wrap(~playlist_grp, ncol = 2, scales = "free_y") +
   geom_line(aes(color = playlist_grp), alpha = 0.1) +
+  scale_color_brewer(type = "qual", palette = "Set2") +
   theme(
-    axis.text.x = element_text(angle = 30, hjust = 1),
+    axis.text.x = element_text(angle = 40, hjust = 1),
     legend.position = "none"
-  )
+  ) +
+  labs(title = "Musical qualities of tracks per playlist group")
 ```
 
 ```{r}
@@ -408,11 +422,10 @@ track_sim_matrix_plot <- track_similarities %.%
   )
 
 (
-  (track_sim_matrix_plot / track_label_plot) + plot_layout(heights = c(20, 1)) |
+  ((track_sim_matrix_plot / track_label_plot) + plot_layout(heights = c(20, 1))) |
     guide_area()
 ) + plot_layout(widths = c(5, 1), guides = "collect")
 ```
-
 
 ```{r}
 track_features <- track_info_df %.% {
