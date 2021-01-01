@@ -241,7 +241,7 @@ var FilterHandle = exports.FilterHandle = function () {
      * @param {Object} [extraInfo] - Extra properties to be included on the event
      *   object that's passed to listeners (in addition to any options that were
      *   passed into the `FilterHandle` constructor).
-     *
+     * 
      * @fires FilterHandle#change
      */
 
@@ -267,7 +267,7 @@ var FilterHandle = exports.FilterHandle = function () {
      * @param {Object} [extraInfo] - Extra properties to be included on the event
      *   object that's passed to listeners (in addition to any options that were
      *   passed into the `FilterHandle` constructor).
-     *
+     * 
      * @fires FilterHandle#change
      */
 

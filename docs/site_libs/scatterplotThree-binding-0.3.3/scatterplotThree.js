@@ -373,7 +373,7 @@ Widget.scatter = function(w, h)
         _this.options.to = [[]];
       }
     }
-    if(_this.options.defer.lcol && i < _this.options.defer.lcol.length)
+    if(_this.options.defer.lcol && i < _this.options.defer.lcol.length) 
       _this.options.lcol = _this.options.defer.lcol[i];
     if(_this.options.defer.main && Array.isArray(_this.options.defer.main) && i < _this.options.defer.main.length)
         {
@@ -680,13 +680,13 @@ Widget.scatter = function(w, h)
         var unique_pch;
         if(Array.isArray(x.pch))
         {
-          unique_pch = x.pch.filter(function (x, i, a) {
-            return a.indexOf(x) == i;
+          unique_pch = x.pch.filter(function (x, i, a) { 
+            return a.indexOf(x) == i; 
           }).filter(function(x){return (x != 'o')});
         } else
         {
-          unique_pch = [x.pch].filter(function (x, i, a) {
-            return a.indexOf(x) == i;
+          unique_pch = [x.pch].filter(function (x, i, a) { 
+            return a.indexOf(x) == i; 
           }).filter(function(x){return (x != 'o')});
         }
         for(var j=0; j < unique_pch.length; j++)
@@ -938,7 +938,7 @@ Widget.scatter = function(w, h)
         var gl = new THREE.Line(gridline, new THREE.LineBasicMaterial({color: tickColor, linewidth: 1}));
         gl.type = THREE.Lines;
         group.add(gl);
-      }
+      }      
     }
     if(x.grid && x.xtick)
     {
@@ -948,7 +948,7 @@ Widget.scatter = function(w, h)
     {
       grid(x.ztick,2,x.axislength);
     }
-
+    
 // Lines
 /* Note that variable line widths are not directly supported by buffered geometry, see for instance:
  * http://stackoverflow.com/questions/32544413/buffergeometry-and-linebasicmaterial-segments-thickness
