@@ -41,8 +41,6 @@ set.seed(0)
 point_overrise_aes <- list(size = 1.5, alpha = 1)
 ```
 
-Mark songs that are just background noise.
-
 ```{r}
 track_to_playlist_map <- playlist_df %.% {
   select(playlist_name = name, playlist_id = id, data)
@@ -72,19 +70,157 @@ idx <- regular_playlists %in% c(
 regular_playlists <- regular_playlists[!idx]
 ```
 
+
+1. Explore the data from a single track.
+2. Cluster/compare all tracks by their info.
+  - HiPlot
+  - heatmap of similarities
+  - PCA & t-SNE
+
+## Analysis of track segments of *Good Things Fall Apart* by Illenium featuring Jon Bellion
+
 ```{r}
-track_features <- track_info_df %.% {
-  select(track_name:album_name, danceability:tempo)
+single_track_info <- track_info_df %>%
+  filter(track_name == "Good Things Fall Apart (with Jon Bellion)")
+```
+
+```{r}
+single_track_sections <- as_tibble(single_track_info$sections[[1]])
+rmarkdown::paged_table(single_track_sections)
+```
+
+```{r}
+bind_rows(
+  single_track_info$bars[[1]] %>% add_column(type = "bars"),
+  single_track_info$beats[[1]] %>% add_column(type = "beats"),
+  single_track_info$tatums[[1]] %>% add_column(type = "tatums")
+) %.%
+  {
+    as_tibble()
+  } %>%
+  ggplot(aes(x = start, y = duration, color = type)) +
+  facet_wrap(~type, scales = "free_y", ncol = 1) +
+  geom_point(alpha = 0.5) +
+  scale_color_fivethirtyeight() +
+  theme(
+    plot.title = element_markdown(),
+    legend.position = "none"
+  ) +
+  labs(
+    x = "time (ms)",
+    y = "confidence",
+    title = "Duration of timing features"
+  )
+```
+
+```{r}
+bind_rows(
+  single_track_info$bars[[1]] %>% add_column(type = "bars"),
+  single_track_info$beats[[1]] %>% add_column(type = "beats"),
+  single_track_info$tatums[[1]] %>% add_column(type = "tatums")
+) %.%
+  {
+    as_tibble()
+  } %>%
+  ggplot(aes(x = start, y = confidence, color = type)) +
+  facet_wrap(~type, ncol = 1) +
+  geom_hline(
+    yintercept = 0.5,
+    color = pal_538["Dark Gray"],
+    size = 1,
+    alpha = 0.7
+  ) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(
+    method = "loess",
+    formula = "y~x",
+    span = 0.2,
+    se = FALSE
+  ) +
+  scale_color_fivethirtyeight() +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_text(),
+    axis.title.y = element_text()
+  ) +
+  labs(
+    x = "time (ms)",
+    y = "confidence",
+    title = "Confidence in declaration of song timing features"
+  )
+```
+
+```{r}
+stacy_segment_tidy <- single_track_info$segments[[1]] %.% {
+  as_tibble()
+  mutate(
+    idx = row_number(),
+    loudness_max = map(loudness_max, ~ c(.))
+  )
+  select(idx, start, loudness_max, pitches, timbre)
+  pivot_longer(-c(idx, start))
+  unnest(value)
 }
 
-track_features_mat <- track_features %.% {
-  select(track_id, danceability:tempo)
-  as.data.frame()
-  column_to_rownames("track_id")
-}
+stacy_segment_tidy %>%
+  ggplot(aes(x = start, y = value, color = name)) +
+  facet_wrap(~name, scales = "free_y", ncol = 1) +
+  geom_point(size = 0.5, alpha = 0.3) +
+  scale_color_fivethirtyeight(guide = FALSE) +
+  theme(
+    plot.title = element_markdown(),
+    axis.title.x = element_text()
+  ) +
+  labs(
+    title = "Segment analysis of *Stacy*",
+    x = "time point"
+  )
+```
 
-track_pca <- prcomp(track_features_mat, scale. = TRUE, center = TRUE)
+```{r}
+stacy_segment_tidy %.%
+  {
+    filter(name == "pitches")
+    group_by(idx, start)
+    summarise(avg_pitch = mean(value))
+    ungroup()
+  } %>%
+  ggplot(aes(x = start, y = avg_pitch)) +
+  geom_point(
+    size = 1,
+    alpha = 0.9,
+    color = pal_538["Blue"]
+  ) +
+  geom_smooth(
+    method = "loess",
+    formula = "y~x",
+    span = 0.5,
+    color = colorspace::darken(pal_538["Blue"], 0.3)
+  ) +
+  theme(
+    plot.title = element_markdown(),
+    axis.title.x = element_text()
+  ) +
+  labs(
+    title = "Average pitch",
+    x = "time"
+  )
+```
 
+```{r}
+tibble(pitches = unlist(single_track_info$segments[[1]]$pitches)) %>%
+  ggplot(aes(x = pitches)) +
+  geom_histogram(breaks = seq(0, 1, 0.05)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = expansion(c(0, 0.02))) +
+  labs(title = "Distribution of pitch")
+```
+
+---
+
+## Comparing tracks by their quantifiable musical features
+
+```{r}
 add_playlist_names <- function(df,
                                playlist_df,
                                by = c("track_name", "track_id")) {
@@ -97,84 +233,6 @@ add_playlist_names <- function(df,
     }))
 }
 
-track_pcs_df <- track_features %.% {
-  select(track_name:album_name)
-  bind_cols(track_pca$x[, 1:2] %>% as_tibble())
-  add_playlist_names(track_to_playlist_map)
-}
-```
-
-```{r}
-as.data.frame(t(summary(track_pca)$importance)) %.%
-  {
-    janitor::clean_names()
-    rownames_to_column("PC")
-    mutate(PC = as.numeric(str_remove(PC, "^PC")))
-  } %>%
-  ggplot(aes(PC, proportion_of_variance)) +
-  geom_col(fill = "grey50", width = 0.7) +
-  geom_line(color = colorspace::darken(spotify_green), size = 1, lty = 2) +
-  geom_point(color = colorspace::darken(spotify_green), size = 3) +
-  scale_x_continuous(
-    breaks = 1:20
-  ) +
-  scale_y_continuous(
-    expand = expansion(mult = c(0, 0.02)),
-    breaks = seq(0, 0.4, 0.05),
-  ) +
-  theme(
-    axis.title.x = element_text(),
-    axis.title.y = element_text(),
-    panel.grid.major.x = element_blank()
-  ) +
-  labs(x = "principal components", y = "porportion of variance")
-```
-
-```{r}
-track_pca$rotation %.%
-  {
-    as.data.frame()
-    rownames_to_column(var = "feature")
-    as_tibble()
-  } %>%
-  ggplot(aes(PC1, PC2)) +
-  geom_hline(yintercept = 0) +
-  geom_vline(xintercept = 0) +
-  ggrepel::geom_label_repel(
-    aes(label = feature),
-    fill = spotify_dark,
-    color = "white",
-    label.size = 0,
-    fontface = "bold",
-    label.padding = unit(1.3, "mm"),
-    label.r = unit(1, "mm")
-  ) +
-  theme(
-    axis.title.x = element_text(),
-    axis.title.y = element_text()
-  ) +
-  labs(x = "PC1", y = "PC2", title = "Contribution of song features to decomposition")
-```
-
-```{r, fig.height=8}
-plot_track_pca <- function(df, x, y, color = NULL, size = NULL, alpha = 0.6) {
-  df %>%
-    ggplot(aes(x = {{ x }}, y = {{ y }})) +
-    geom_point(aes(color = {{ color }}, size = {{ size }}), alpha = alpha) +
-    theme(
-      axis.title.x = element_text(),
-      axis.title.y = element_text(),
-      legend.title = element_blank()
-    )
-}
-
-plot_track_pca(track_pcs_df, PC1, PC2, color = playlist) +
-  scale_color_discrete(
-    guide = guide_legend(nrow = 6, override.aes = point_overrise_aes)
-  )
-```
-
-```{r, fig.height=7}
 add_playlist_groups <- function(df) {
   df %>%
     mutate(playlist_grp = case_when(
@@ -190,122 +248,39 @@ group_playlist_groups <- function(df, ...) {
     select(...) %>%
     group_by(...) %>%
     distinct() %>%
-    summarise(playlist_grp = ifelse(n() > 1, "multiple", playlist_grp)) %>%
+    summarise(
+      playlist_grp = ifelse(n() > 1, "multiple", playlist_grp)
+    ) %>%
     ungroup()
 }
-
-
-track_pcs_df %.%
-  {
-    unnest(playlist_data)
-    add_playlist_groups()
-    group_playlist_groups(track_name, track_id, PC1, PC2, playlist_grp)
-  } %>%
-  plot_track_pca(PC1, PC2, color = playlist_grp) +
-  scale_color_brewer(
-    type = "qual", palette = "Set1",
-    guide = guide_legend(nrow = 1, override.aes = point_overrise_aes)
-  ) +
-  labs(
-    x = "PC1",
-    y = "PC2",
-    title = "PCA: Playlist Category"
-  )
 ```
-
-```{r, fig.height=7}
-scale_numeric <- function(x, na.rm = TRUE) {
-  (x - mean(x, na.rm = na.rm)) / sd(x, na.rm = na.rm)
-}
-
-track_pcs_df %.%
-  {
-    left_join(
-      track_features %>% select(-c(album_name, album_id)),
-      by = c("track_name", "track_id")
-    )
-    mutate(
-      acousticness = scale_numeric(acousticness),
-      loudness = scale_numeric(loudness),
-      color = loudness - acousticness,
-    )
-  } %>%
-  plot_track_pca(
-    PC1,
-    PC2,
-    color = color,
-    alpha = 1
-  ) +
-  annotate(
-    "text",
-    x = c(-1.2, 1.2), y = -3,
-    label = c("Acousticness", "Loudness"),
-    color = c("#3775B9", "#FE5B31"),
-    size = 5,
-    fontface = "bold",
-    hjust = c(1, 0)
-  ) +
-  annotate(
-    "segment",
-    x = 0, y = -3, xend = c(-0.7, 0.7), yend = -3,
-    arrow = arrow(length = unit(2, "mm"), type = "closed")
-  ) +
-  scale_color_distiller(type = "div", palette = "RdYlBu") +
-  scale_size_continuous(range = c(1, 3)) +
-  labs(
-    x = "PC1",
-    y = "PC2",
-    title = "Distribution of the features defining PC1"
-  )
-```
-
-```{r, fig.height=7}
-track_tsne_data <- as.data.frame(track_features_mat) %.% {
-  rownames_to_column("track_id")
-  mutate_if(is.numeric, scale_numeric)
-  column_to_rownames("track_id")
-  distinct()
-}
-
-track_tsne <- track_tsne_data %>%
-  Rtsne::Rtsne()
-
-track_tsne_df <- as_tibble(track_tsne$Y) %.% {
-  mutate(track_id = rownames(track_tsne_data))
-  add_playlist_names(track_to_playlist_map, by = "track_id")
-}
-
-track_tsne_df %>%
-  plot_track_pca(V1, V2, color = playlist) +
-  scale_color_discrete(
-    guide = guide_legend(nrow = 6, override.aes = point_overrise_aes)
-  ) +
-  labs(x = "t-SNE 1", y = "t-SNE 2", title = "t-SNE: Separation by playlist")
-```
-
-
-```{r, fig.height=7}
-track_tsne_df %.%
-  {
-    unnest(playlist_data)
-    add_playlist_groups()
-    group_playlist_groups(track_name, track_id, V1, V2, playlist_grp)
-  } %>%
-  plot_track_pca(V1, V2, color = playlist_grp) +
-  scale_color_brewer(
-    type = "qual", palette = "Set1",
-    guide = guide_legend(nrow = 1, override.aes = point_overrise_aes)
-  ) +
-  labs(x = "t-SNE 1", y = "t-SNE 2", title = "t-SNE: Separation by playlist category")
-```
-
----
 
 ```{r}
-cosine_similarity <- function(x, y) {
-  ((x %*% y) / (sqrt(sum(x^2)) * sqrt(sum(y^2))))[[1]]
-}
+track_info_df %.%
+  {
+    select(track_id, danceability:tempo)
+    mutate_if(is.numeric, scale_numeric)
+    distinct()
+    left_join(track_to_playlist_map, by = "track_id")
+    unnest(playlist_data)
+    add_playlist_groups()
+    select(-c(track_name, playlist_id, playlist_name))
+    pivot_longer(
+      -c(track_id, playlist_grp),
+      names_to = "feature",
+      values_to = "value"
+    )
+  } %>%
+  ggplot(aes(x = feature, y = value, group = track_id)) +
+  facet_wrap(~playlist_grp, ncol = 2, scales = "free_y") +
+  geom_line(aes(color = playlist_grp), alpha = 0.1) +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1),
+    legend.position = "none"
+  )
+```
 
+```{r}
 track_metrics <- track_info_df %>%
   select(track_id, danceability:tempo) %>%
   mutate_if(is.numeric, scale_numeric) %>%
@@ -428,7 +403,9 @@ track_sim_matrix_plot <- track_similarities %.%
     plot.margin = margin(),
     plot.title = element_text(size = 14)
   ) +
-  labs(title = "Clustering of tracks by similarity of music metrics")
+  labs(
+    title = "Clustering of tracks by similarity of music metrics"
+  )
 
 (
   (track_sim_matrix_plot / track_label_plot) + plot_layout(heights = c(20, 1)) |
@@ -436,117 +413,213 @@ track_sim_matrix_plot <- track_similarities %.%
 ) + plot_layout(widths = c(5, 1), guides = "collect")
 ```
 
----
-
-## Analysis of track segments of *Stacy* by Quinn XCII
 
 ```{r}
-stacy_analysis <- track_info_df %>%
-  filter(track_name == "Stacy")
-```
-
-```{r}
-stacy_sections <- as_tibble(stacy_analysis$sections[[1]])
-rmarkdown::paged_table(stacy_sections)
-```
-
-```{r}
-bind_rows(
-  stacy_analysis$bars[[1]] %>% add_column(type = "bars"),
-  stacy_analysis$beats[[1]] %>% add_column(type = "beats"),
-  stacy_analysis$tatums[[1]] %>% add_column(type = "tatums")
-) %.%
-  {
-    as_tibble()
-  } %>%
-  ggplot(aes(x = start, y = duration, color = type)) +
-  facet_wrap(~type, scales = "free_y", ncol = 1) +
-  geom_point(alpha = 0.5) +
-  scale_color_fivethirtyeight() +
-  theme(
-    plot.title = element_markdown(),
-    legend.position = "none"
-  ) +
-  labs(
-    x = "time (ms)",
-    y = "confidence",
-    title = "Duration of timing features throughout *Stacy*"
-  )
-```
-
-```{r}
-bind_rows(
-  stacy_analysis$bars[[1]] %>% add_column(type = "bars"),
-  stacy_analysis$beats[[1]] %>% add_column(type = "beats"),
-  stacy_analysis$tatums[[1]] %>% add_column(type = "tatums")
-) %.%
-  {
-    as_tibble()
-  } %>%
-  ggplot(aes(x = start, y = confidence, color = type)) +
-  facet_wrap(~type, ncol = 1) +
-  geom_hline(yintercept = 0.5, color = pal_538["Dark Gray"], size = 1, alpha = 0.7) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "loess", formula = "y~x", span = 0.2, se = FALSE) +
-  scale_color_fivethirtyeight() +
-  theme(
-    legend.position = "none"
-  ) +
-  labs(
-    x = "time (ms)",
-    y = "confidence",
-    title = "Confidence in declaration of song timing features"
-  )
-```
-
-```{r}
-stacy_segment_tidy <- stacy_analysis$segments[[1]] %.% {
-  as_tibble()
-  mutate(
-    idx = row_number(),
-    loudness_max = map(loudness_max, ~ c(.))
-  )
-  select(idx, start, loudness_max, pitches, timbre)
-  pivot_longer(-c(idx, start))
-  unnest(value)
+track_features <- track_info_df %.% {
+  select(track_name:album_name, danceability:tempo)
 }
 
-stacy_segment_tidy %>%
-  ggplot(aes(x = start, y = value, color = name)) +
-  facet_wrap(~name, scales = "free_y", ncol = 1) +
-  geom_point(size = 0.5, alpha = 0.3) +
-  scale_color_fivethirtyeight(guide = FALSE) +
-  theme(
-    plot.title = element_markdown(),
-    axis.title.x = element_text()
-  ) +
-  labs(
-    title = "Segment analysis of *Stacy*",
-    x = "time point"
-  )
+track_features_mat <- track_features %.% {
+  select(track_id, danceability:tempo)
+  as.data.frame()
+  column_to_rownames("track_id")
+}
+
+track_pca <- prcomp(
+  track_features_mat,
+  scale. = TRUE,
+  center = TRUE
+)
+
+track_pcs_df <- track_features %.% {
+  select(track_name:album_name)
+  bind_cols(track_pca$x[, 1:2] %>% as_tibble())
+  add_playlist_names(track_to_playlist_map)
+}
 ```
 
 ```{r}
-stacy_segment_tidy %.%
+as.data.frame(t(summary(track_pca)$importance)) %.%
   {
-    filter(name == "pitches")
-    group_by(idx, start)
-    summarise(avg_pitch = mean(value))
-    ungroup()
+    janitor::clean_names()
+    rownames_to_column("PC")
+    mutate(PC = as.numeric(str_remove(PC, "^PC")))
   } %>%
-  ggplot(aes(x = start, y = avg_pitch)) +
-  geom_point(size = 1, alpha = 0.9, color = pal_538["Blue"]) +
-  geom_smooth(method = "loess", formula = "y~x", span = 0.5, color = colorspace::darken(pal_538["Blue"], 0.3)) +
+  ggplot(aes(PC, proportion_of_variance)) +
+  geom_col(fill = "grey50", width = 0.7) +
+  geom_line(color = colorspace::darken(spotify_green), size = 1, lty = 2) +
+  geom_point(color = colorspace::darken(spotify_green), size = 3) +
+  scale_x_continuous(
+    breaks = 1:20
+  ) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.02)),
+    breaks = seq(0, 0.4, 0.05),
+  ) +
   theme(
-    plot.title = element_markdown()
+    axis.title.x = element_text(),
+    axis.title.y = element_text(),
+    panel.grid.major.x = element_blank()
   ) +
   labs(
-    title = "Average pitch of *Stacy*"
+    x = "principal components",
+    y = "porportion of variance"
   )
 ```
 
 ```{r}
-tibble(pitches = unlist(stacy_analysis$segments[[1]]$pitches)) %>%
-  ggplot(aes(x = pitches)) +
-  geom_histogram(binwidth = 0.05)
+track_pca$rotation %.%
+  {
+    as.data.frame()
+    rownames_to_column(var = "feature")
+    as_tibble()
+  } %>%
+  ggplot(aes(PC1, PC2)) +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
+  ggrepel::geom_label_repel(
+    aes(label = feature),
+    fill = spotify_dark,
+    color = "white",
+    label.size = 0,
+    fontface = "bold",
+    label.padding = unit(1.3, "mm"),
+    label.r = unit(1, "mm")
+  ) +
+  theme(
+    axis.title.x = element_text(),
+    axis.title.y = element_text()
+  ) +
+  labs(
+    x = "PC1",
+    y = "PC2",
+    title = "Contribution of song features to decomposition"
+  )
+```
+
+```{r, fig.height=8}
+plot_track_pca <- function(df, x, y, color = NULL, size = NULL, alpha = 0.6) {
+  df %>%
+    ggplot(aes(x = {{ x }}, y = {{ y }})) +
+    geom_point(aes(color = {{ color }}, size = {{ size }}), alpha = alpha) +
+    theme(
+      axis.title.x = element_text(),
+      axis.title.y = element_text(),
+      legend.title = element_blank()
+    )
+}
+
+plot_track_pca(track_pcs_df, PC1, PC2, color = playlist) +
+  scale_color_discrete(
+    guide = guide_legend(nrow = 6, override.aes = point_overrise_aes)
+  )
+```
+
+```{r, fig.height=7}
+track_pcs_df %.%
+  {
+    unnest(playlist_data)
+    add_playlist_groups()
+    group_playlist_groups(track_name, track_id, PC1, PC2, playlist_grp)
+  } %>%
+  plot_track_pca(PC1, PC2, color = playlist_grp) +
+  scale_color_brewer(
+    type = "qual", palette = "Set1",
+    guide = guide_legend(nrow = 1, override.aes = point_overrise_aes)
+  ) +
+  labs(
+    x = "PC1",
+    y = "PC2",
+    title = "PCA: Playlist Category"
+  )
+```
+
+```{r, fig.height=7}
+track_pcs_df %.%
+  {
+    left_join(
+      track_features %>% select(-c(album_name, album_id)),
+      by = c("track_name", "track_id")
+    )
+    mutate(
+      acousticness = scale_numeric(acousticness),
+      loudness = scale_numeric(loudness),
+      color = loudness - acousticness,
+    )
+  } %>%
+  plot_track_pca(
+    PC1,
+    PC2,
+    color = color,
+    alpha = 1
+  ) +
+  annotate(
+    "text",
+    x = c(-1.2, 1.2), y = -3,
+    label = c("Acousticness", "Loudness"),
+    color = c("#3775B9", "#FE5B31"),
+    size = 5,
+    fontface = "bold",
+    hjust = c(1, 0)
+  ) +
+  annotate(
+    "segment",
+    x = 0, y = -3, xend = c(-0.7, 0.7), yend = -3,
+    arrow = arrow(length = unit(2, "mm"), type = "closed")
+  ) +
+  scale_color_distiller(type = "div", palette = "RdYlBu") +
+  scale_size_continuous(range = c(1, 3)) +
+  labs(
+    x = "PC1",
+    y = "PC2",
+    title = "Distribution of the features defining PC1"
+  )
+```
+
+```{r, fig.height=7}
+track_tsne_data <- as.data.frame(track_features_mat) %.% {
+  rownames_to_column("track_id")
+  mutate_if(is.numeric, scale_numeric)
+  column_to_rownames("track_id")
+  distinct()
+}
+
+track_tsne <- track_tsne_data %>%
+  Rtsne::Rtsne()
+
+track_tsne_df <- as_tibble(track_tsne$Y) %.% {
+  mutate(track_id = rownames(track_tsne_data))
+  add_playlist_names(track_to_playlist_map, by = "track_id")
+}
+
+track_tsne_df %>%
+  plot_track_pca(V1, V2, color = playlist) +
+  scale_color_discrete(
+    guide = guide_legend(nrow = 6, override.aes = point_overrise_aes)
+  ) +
+  labs(
+    x = "t-SNE 1",
+    y = "t-SNE 2",
+    title = "t-SNE: Separation by playlist"
+  )
+```
+
+
+```{r, fig.height=7}
+track_tsne_df %.%
+  {
+    unnest(playlist_data)
+    add_playlist_groups()
+    group_playlist_groups(track_name, track_id, V1, V2, playlist_grp)
+  } %>%
+  plot_track_pca(V1, V2, color = playlist_grp) +
+  scale_color_brewer(
+    type = "qual", palette = "Set1",
+    guide = guide_legend(nrow = 1, override.aes = point_overrise_aes)
+  ) +
+  labs(
+    x = "t-SNE 1",
+    y = "t-SNE 2",
+    title = "t-SNE: Separation by playlist category"
+  )
 ```
