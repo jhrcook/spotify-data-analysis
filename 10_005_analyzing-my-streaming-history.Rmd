@@ -32,7 +32,16 @@ streaming_history <- readRDS(here::here("data", "streaming_history.rds"))
 min_song_length <- 60 * 1
 ```
 
-Minimum length of a song `r round(min_song_length, 1)` seconds.
+The following is a dive into my streaming history from the past year or so.
+For each track, I am given the time and date, artist name, track name, and for how long the track was played.
+The data was processed in [Preparing the downloaded files](05_002_spotify-raw-data-preparation.html).
+
+---
+
+## Time spent listening to music
+
+To begin, we can look at the distribution of the durations of the tracks.
+For reference, I have annotated the plot with 3 of my favorite songs: [*Stacy*](https://open.spotify.com/track/07ZQLYn9x4x3L3vxStc1zr?si=PKUhdcYLQXmaiyU79C-HmQ) by [Quinn XCII](https://open.spotify.com/artist/3ApUX1o6oSz321MMECyIYd?si=aBfY9yDrSmmhxe1F8ThFww), [*Good Things Fall Apart*](https://open.spotify.com/track/3LxG9HkMMFP0MZuiw3O2rF?si=T9_Hg7_pRnWRGlctI9f5aQ) by [Illenium](https://open.spotify.com/artist/45eNHdiiabvmbp4erw26rg?si=2ZdCEqJFT2KU3PZ_iB71Vw) featuring [Jon Bellion](https://open.spotify.com/artist/50JJSqHUf2RQ9xsHs0KMHg?si=2SMZIa-MS3mHU0BLmsolkg), and [*Choices*](https://open.spotify.com/track/65z28RA7Nmzsog6Noln0sB?si=suGmKtjtREmIINnBU3HrJg) by [To Kill a King](https://open.spotify.com/artist/7yHBGaYHPXkJSVUtHiM816?si=iHFiAoUHRD2xBPQc1EgPUA) (you can listen to samples of these songs at the bottom of the page).
 
 ```{r}
 notable_lengths <- tibble(
@@ -43,8 +52,6 @@ notable_lengths <- tibble(
 ) %.% {
   mutate(length = as.numeric(lubridate::ms(length)))
 }
-
-# TODO: cover the [0 -> min_song_len] with an area (replacing the dashed line)
 
 streaming_history %>%
   ggplot(aes(x = sec_played)) +
@@ -109,6 +116,14 @@ streaming_history %>%
   )
 ```
 
+The durations range from 0 to around 10 minutes.
+Presumably, the short durations correspond to skipping a track at the beginning.
+For the purposes of further analysis, I will set the minimum length of a song as `r round(min_song_length, 1)` seconds, removing data points with shorter durations.
+The longer songs were likely background noise tracks for various wilderness albums or coffee shop sounds.
+
+We can also see how much time I spent listening to music by plotting the cumulative duration over time.
+By the gradual reduction on the slop over time, we can see that I reduced the amount of time I listened to music over the course of the year.
+
 ```{r}
 streaming_history %.%
   {
@@ -139,11 +154,12 @@ streaming_history %.%
   )
 ```
 
-
 ```{r}
 streaming_history %<>% filter(sec_played >= min_song_length)
 ```
 
+This trend is also supported by the number of tracks I listened to per day.
+The smoothened trend line indicates a lull in the fall of 2020.
 
 ```{r}
 streaming_history %.%
@@ -172,17 +188,62 @@ streaming_history %.%
   )
 ```
 
+The variability of my listening patterns also followed the same general trend.
+As the plot of the number of different artists and tracks per month below indicates, I had a peak of diversity in April and May of 2020 followed by a general decline.
+
+```{r}
+sec_axis_coef <- 2
+artist_color <- pal_538[["Red"]]
+track_color <- pal_538[["Blue"]]
+
+streaming_history %.%
+  {
+    mutate(mo_year = lubridate::floor_date(end_time, "month"))
+    group_by(mo_year)
+    summarise(
+      num_artists = n_distinct(artist_name),
+      num_tracks = n_distinct(track_name)
+    )
+    ungroup()
+    mutate(num_tracks = num_tracks / sec_axis_coef)
+  } %>%
+  ggplot(aes(x = mo_year)) +
+  geom_line(aes(y = num_artists), color = artist_color, alpha = 0.7) +
+  geom_line(aes(y = num_tracks), color = track_color, alpha = 0.7) +
+  geom_point(aes(y = num_artists), color = artist_color) +
+  geom_point(aes(y = num_tracks), color = track_color) +
+  scale_y_continuous(
+    name = "num. artists",
+    sec.axis = sec_axis(~ . * sec_axis_coef, name = "num. tracks")
+  ) +
+  scale_x_datetime(
+    date_breaks = "2 months",
+    date_labels = "%b %Y"
+  ) +
+  theme(
+    axis.title.y = element_text(color = colorspace::darken(artist_color)),
+    axis.title.y.right = element_text(color = colorspace::darken(track_color))
+  ) +
+  labs(
+    title = "Variability in artists and songs",
+    subtitle = "The number of different artists (red) and songs (blue) listened to each month."
+  )
+```
+
+### Favorites
+
+Next, I want to look into who my most played artists and songs have been.
+The next two plots show the top artists and individual songs from my streaming history, and the third plot shows the top songs from each of my favorite artists.
 
 ```{r}
 plot_barcount <- function(df, x, y,
                           x_lbl, title,
-                          nudge_text = 11, expand_x = 0.08, wrap_y = Inf) {
-  df %.%
-    {
-      mutate(label = scales::comma({{ x }}, accuracy = 1))
-    } %>%
+                          nudge_text = 11,
+                          expand_x = 0.08,
+                          wrap_y = Inf) {
+  df %>%
+    mutate(label = scales::comma({{ x }}, accuracy = 1)) %>%
     ggplot(aes(x = {{ x }}, y = {{ y }})) +
-    geom_col(fill = spotify_dark2, color = NA) +
     geom_text(
       aes(label = label),
       hjust = 0,
@@ -217,7 +278,8 @@ streaming_history %.%
     title = "Top-10 most listened to artists",
     expand_x = 0.11,
     wrap_y = 30
-  )
+  ) +
+  geom_col(fill = spotify_dark2, color = NA)
 ```
 
 ```{r}
@@ -235,8 +297,24 @@ streaming_history %.%
     nudge_text = 2,
     expand_x = 0.06,
     wrap_y = 30
+  ) +
+  geom_col(aes(fill = artist_name), color = NA) +
+  scale_fill_excel_new(
+    "Atlas",
+    labels = function(x) {
+      str_wrap(x, width = 25)
+    },
+    guide = guide_legend(nrow = 1, title = "Artist")
+  ) +
+  theme(
+    legend.margin = margin(),
+    legend.title = element_text(size = 11),
+    legend.key.size = unit(4, "mm")
   )
 ```
+
+Interestingly, my top songs are dominated by [Jon Bellion](https://open.spotify.com/artist/50JJSqHUf2RQ9xsHs0KMHg?si=2SMZIa-MS3mHU0BLmsolkg) though my most played artist was [Imagine Dragons](https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q?si=GcRvAHkmTCuCChoe1nJULA).
+This likely indicates that I listened to many different songs from [Imagine Dragons](https://open.spotify.com/artist/53XhwfbYqKCa1cC15pYq2q?si=GcRvAHkmTCuCChoe1nJULA) while I tended to listen to fewer [Jon Bellion](https://open.spotify.com/artist/50JJSqHUf2RQ9xsHs0KMHg?si=2SMZIa-MS3mHU0BLmsolkg) songs very frequently.
 
 ```{r, fig.height=6}
 ignore_top_artists <- c(
@@ -270,9 +348,13 @@ streaming_history %.%
     expand_x = 0.20,
     wrap_y = 30
   ) +
+  geom_col(fill = spotify_dark2, color = NA) +
   facet_wrap(~artist_name, ncol = 2, scales = "free") +
   theme(strip.text = element_text(face = "bold"))
 ```
+
+Plotting the number of times I listened to my top songs in each month, [*Good Things Fall Apart*](https://open.spotify.com/track/3LxG9HkMMFP0MZuiw3O2rF?si=uY4xje_uSi24UUAB21wcbg) (orange) peaked in February, probably after I first discovered it in late January.
+Then, In April, I got hooked on [*Pre-Occupied*](https://open.spotify.com/track/0i4Zkb6Ts5JqLJIAMNzSSl?si=Tz9423Y9ThSfHQK5UBcJkA) by [Jon Bellion](https://open.spotify.com/artist/50JJSqHUf2RQ9xsHs0KMHg?si=iURyF8AzTCOL86CmmGnJ3w) (purple).
 
 ```{r}
 top_songs <- streaming_history %.% {
@@ -299,10 +381,12 @@ streaming_history %.%
   ) +
   scale_x_datetime(date_breaks = "2 months", date_labels = "%b %Y") +
   labs(
-    title = "The frequency of my top songs",
+    title = "The frequency of my top songs over time",
     subtitle = "The number of times each song was played per month."
   )
 ```
+
+Below is a similar plot but showing how often I listened to my favorite artists each month.
 
 ```{r, fig.height=10}
 pal <- c(excel_new_pal("Atlas")(6), "other" = pal_538[["Dark Gray"]])
@@ -339,6 +423,11 @@ streaming_history %.%
     title = "Trends in listening to my favorite artists"
   )
 ```
+Most artists followed the general trend of more listening early in the year, trailing off in the Fall.
+This was no true, however, for [Quinn XCII](https://open.spotify.com/artist/3ApUX1o6oSz321MMECyIYd?si=xNmBqLMsQ0KtNDonz6Jy3w) ([pronounced "Quinn 92"](https://en.wikipedia.org/wiki/Quinn_XCII#2020-present:_A_Letter_to_My_Younger_Self)) because he dropped a new album, [*A Letter To My Younger Self*](https://open.spotify.com/album/1dVw3jSdgZp7PfGhCEo32t?si=TOsNYpa2Txm4BwO6pZD7OQ), on July 10, 2020.
+
+You can see this switch in the following plot of which Quinn XCII songs I listened to most.
+In July, there was a spike in the total number of Quinn XCII songs played, and the top individual song switched to [*Notice Me*](https://open.spotify.com/track/6mVzv4E4oc7Fcw6yUTfzub?si=FVP-1x8QQSCqrc1A3UYqQw) (yellow).
 
 ```{r}
 pal <- c(excel_new_pal("Office Theme")(6), "other" = pal_538[["Medium Gray"]])
@@ -383,43 +472,10 @@ streaming_history %.%
   )
 ```
 
-```{r}
-sec_axis_coef <- 2
-artist_color <- pal_538[["Red"]]
-track_color <- pal_538[["Blue"]]
+---
 
-streaming_history %.%
-  {
-    mutate(mo_year = lubridate::floor_date(end_time, "month"))
-    group_by(mo_year)
-    summarise(
-      num_artists = n_distinct(artist_name),
-      num_tracks = n_distinct(track_name)
-    )
-    ungroup()
-    mutate(num_tracks = num_tracks / sec_axis_coef)
-  } %>%
-  ggplot(aes(x = mo_year)) +
-  geom_line(aes(y = num_artists), color = artist_color, alpha = 0.7) +
-  geom_line(aes(y = num_tracks), color = track_color, alpha = 0.7) +
-  geom_point(aes(y = num_artists), color = artist_color) +
-  geom_point(aes(y = num_tracks), color = track_color) +
-  scale_y_continuous(
-    name = "num. artists",
-    sec.axis = sec_axis(~ . * sec_axis_coef, name = "num. tracks")
-  ) +
-  scale_x_datetime(
-    date_breaks = "2 months",
-    date_labels = "%b %Y"
-  ) +
-  theme(
-    axis.title.y = element_text(color = colorspace::darken(artist_color)),
-    axis.title.y.right = element_text(color = colorspace::darken(track_color))
-  ) +
-  labs(
-    title = "Variability in artists and songs",
-    subtitle = "The number of different artists (red) and songs (blue) listened to each month."
-  )
-```
+<iframe src="https://open.spotify.com/embed/track/1pyGo7knT3LE2I1FJIrwdX" width="100" height="100" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
 
-interesting ideas:
+<iframe src="https://open.spotify.com/embed/track/3LxG9HkMMFP0MZuiw3O2rF" width="100" height="100" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+
+<iframe src="https://open.spotify.com/embed/track/65z28RA7Nmzsog6Noln0sB" width="100" height="100" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
